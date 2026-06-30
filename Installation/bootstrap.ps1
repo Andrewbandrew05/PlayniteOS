@@ -8,7 +8,7 @@ if (Test-Path $PyDir) { Remove-Item $PyDir -Recurse -Force }
 Expand-Archive $PyZip -DestinationPath $PyDir -Force
 
 Write-Host "Downloading Installer from GitHub..." -ForegroundColor Cyan
-Invoke-WebRequest "$RepoUrl/installer.py" -OutFile "$env:TEMP\installer.py"
+Invoke-WebRequest "$RepoUrl/Installation/installer.py" -OutFile "$env:TEMP\installer.py"
 
 Write-Host "Handing over to Python..." -ForegroundColor Green
 & "$PyDir\python.exe" "$env:TEMP\installer.py"

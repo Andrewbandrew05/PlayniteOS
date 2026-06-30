@@ -7,7 +7,7 @@ import shutil
 # --- CONFIGURATION ---
 REPO_RAW = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main"
 PLAYNITE_URL = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
-STEAM_URL = "https://repo.steampowered.com/windows/SteamSetup.exe"
+STEAM_URL = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 WINSW_URL = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
