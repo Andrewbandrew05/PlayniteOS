@@ -118,6 +118,13 @@ def main():
     print("\n[9/9] Finalizing Permissions...")
     run_cmd(r'icacls "C:\Games" /grant "Users:(OI)(CI)F" /T /C /Q')
     run_cmd(r'icacls "C:\PlayniteOS" /grant "Users:(OI)(CI)RX" /T /C /Q')
+    # Add the Firewall Rule
+    fw_cmd = (
+        'powershell.exe -Command "New-NetFirewallRule -DisplayName \'PlayniteOS-Core API\' '
+        '-Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080 '
+        '-Description \'Allows management of PlayniteOS via Python API.\' -ErrorAction SilentlyContinue"'
+    )
+    run_cmd(fw_cmd)    
 
     print("\n==========================================")
     print("   INSTALLATION COMPLETE! REBOOT NOW.     ")
