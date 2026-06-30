@@ -3,7 +3,6 @@ import subprocess
 import urllib.request
 import zipfile
 import shutil
-import sys
 
 # --- CONFIGURATION ---
 REPO_RAW = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main"
@@ -12,9 +11,9 @@ STEAM_URL = "https://repo.steampowered.com/windows/SteamSetup.exe"
 WINSW_URL = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
-def run_cmd(cmd, capture=True):
+def run_cmd(cmd):
     print(f" > {cmd}")
-    return subprocess.run(cmd, shell=True, capture_output=capture, text=True)
+    return subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
 def download(url, dest):
     print(f"Downloading: {url}")
@@ -46,12 +45,11 @@ def main():
     
     # Enable site-packages in the embedded environment
     pth_file = r"C:\PlayniteOS\Core\Python\python311._pth"
-    if os.path.exists(pth_file):
-        with open(pth_file, 'r') as f:
-            lines = f.readlines()
-        with open(pth_file, 'w') as f:
-            for line in lines:
-                f.write(line.replace('#import site', 'import site'))
+    with open(pth_file, 'r') as f:
+        lines = f.readlines()
+    with open(pth_file, 'w') as f:
+        for line in lines:
+            f.write(line.replace('#import site', 'import site'))
 
     # 3. Install Pip and Dependencies for the Core API
     print("\n[3/9] Installing API Dependencies...")
