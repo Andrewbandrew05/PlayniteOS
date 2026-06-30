@@ -1,0 +1,8 @@
+<service>
+  <id>PlayniteOS-Core</id>
+  <name>PlayniteOS Management Core</name>
+  <description>Handles remote management and user orchestration for PlayniteOS.</description>
+  <executable>C:\Users\admin\AppData\Local\Python\bin\python.exe</executable>
+  <arguments>-m uvicorn main:app --host 0.0.0.0 --port 8080</arguments>
+  <log mode="roll"></log>
+</service>

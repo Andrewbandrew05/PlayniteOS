@@ -1,0 +1,88 @@
+2026-06-29 16:17:08,486 DEBUG - Starting WinSW in console mode
+2026-06-29 16:17:08,522 INFO  - Installing service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:17:08,586 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' was installed successfully.
+2026-06-29 16:17:14,925 DEBUG - Starting WinSW in console mode
+2026-06-29 16:17:15,145 INFO  - Starting service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:17:15,564 DEBUG - Starting WinSW in service mode
+2026-06-29 16:17:15,600 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' started successfully.
+2026-06-29 16:17:15,765 INFO  - Starting python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 16:17:15,812 ERROR - Failed to start service.
+System.ComponentModel.Win32Exception (2): An error occurred trying to start process 'python.exe' with working directory 'C:\PlayniteOS\Core'. The system cannot find the file specified.
+   at System.Diagnostics.Process.StartWithCreateProcess(ProcessStartInfo )
+   at System.Diagnostics.Process.StartCore(ProcessStartInfo )
+   at System.Diagnostics.Process.Start()
+   at WinSW.Util.ProcessHelper.StartProcessAndCallbackForExit(Process processToStart, String executable, String arguments, Dictionary`2 envVars, String workingDirectory, Nullable`1 priority, ProcessCompletionCallback callback, LogHandler logHandler, Boolean hideWindow)
+   at WinSW.WrapperService.StartProcess(Process processToStart, String arguments, String executable, LogHandler logHandler)
+   at WinSW.WrapperService.DoStart()
+   at WinSW.WrapperService.OnStart(String[] args)
+2026-06-29 16:29:21,057 DEBUG - Starting WinSW in console mode
+2026-06-29 16:29:21,101 INFO  - Stopping service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:29:21,115 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' has already stopped.
+2026-06-29 16:29:30,388 DEBUG - Starting WinSW in console mode
+2026-06-29 16:29:30,424 INFO  - Uninstalling service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:29:30,437 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' was uninstalled successfully.
+2026-06-29 16:29:37,067 DEBUG - Starting WinSW in console mode
+2026-06-29 16:29:37,104 INFO  - Installing service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:29:37,150 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' was installed successfully.
+2026-06-29 16:29:42,477 DEBUG - Starting WinSW in console mode
+2026-06-29 16:29:42,522 INFO  - Starting service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:29:42,937 DEBUG - Starting WinSW in service mode
+2026-06-29 16:29:42,973 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' started successfully.
+2026-06-29 16:29:43,116 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 16:29:43,260 INFO  - Started process 10640
+2026-06-29 16:29:43,277 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-29 16:39:43,000 DEBUG - Starting WinSW in console mode
+2026-06-29 16:39:43,045 INFO  - Stopping service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:40:14,918 INFO  - Stopping PlayniteOS-Core
+2026-06-29 16:40:14,919 DEBUG - ProcessKill 10640
+2026-06-29 16:40:14,928 DEBUG - Stopping process 10640...
+2026-06-29 16:40:15,219 DEBUG - Process 10640 canceled with code 0.
+2026-06-29 16:40:15,227 INFO  - Finished PlayniteOS-Core
+2026-06-29 16:40:15,447 INFO  - Starting service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:40:15,878 DEBUG - Starting WinSW in service mode
+2026-06-29 16:40:16,081 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 16:40:16,136 INFO  - Started process 11172
+2026-06-29 16:40:16,154 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-29 16:40:16,160 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' restarted successfully.
+2026-06-29 16:40:18,490 DEBUG - Starting WinSW in console mode
+2026-06-29 16:40:18,541 INFO  - Stopping service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:40:18,561 INFO  - Stopping PlayniteOS-Core
+2026-06-29 16:40:18,562 DEBUG - ProcessKill 11172
+2026-06-29 16:40:18,570 DEBUG - Stopping process 11172...
+2026-06-29 16:40:18,879 DEBUG - Process 11172 canceled with code 0.
+2026-06-29 16:40:18,889 INFO  - Finished PlayniteOS-Core
+2026-06-29 16:40:19,087 INFO  - Starting service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 16:40:19,528 DEBUG - Starting WinSW in service mode
+2026-06-29 16:40:19,715 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 16:40:19,769 INFO  - Started process 2640
+2026-06-29 16:40:19,787 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-29 16:40:19,817 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' restarted successfully.
+2026-06-29 18:44:46,962 DEBUG - Starting WinSW in console mode
+2026-06-29 18:44:47,015 INFO  - Stopping service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 18:44:47,035 INFO  - Stopping PlayniteOS-Core
+2026-06-29 18:44:47,037 DEBUG - ProcessKill 2640
+2026-06-29 18:44:47,045 DEBUG - Stopping process 2640...
+2026-06-29 18:44:47,339 DEBUG - Process 2640 canceled with code 0.
+2026-06-29 18:44:47,343 INFO  - Finished PlayniteOS-Core
+2026-06-29 18:44:47,553 INFO  - Starting service 'PlayniteOS Management Core (PlayniteOS-Core)'...
+2026-06-29 18:44:47,985 DEBUG - Starting WinSW in service mode
+2026-06-29 18:44:48,188 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 18:44:48,324 INFO  - Started process 6488
+2026-06-29 18:44:48,344 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-29 18:44:48,521 INFO  - Service 'PlayniteOS Management Core (PlayniteOS-Core)' restarted successfully.
+2026-06-29 18:56:09,831 DEBUG - Starting WinSW in service mode
+2026-06-29 18:56:10,008 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 18:56:10,043 INFO  - Started process 5360
+2026-06-29 18:56:10,054 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-29 19:09:37,753 DEBUG - Starting WinSW in service mode
+2026-06-29 19:09:37,929 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 19:09:37,971 INFO  - Started process 5384
+2026-06-29 19:09:37,985 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-29 19:25:55,797 DEBUG - Starting WinSW in service mode
+2026-06-29 19:25:56,017 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-29 19:25:56,056 INFO  - Started process 5504
+2026-06-29 19:25:56,070 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
+2026-06-30 13:27:54,008 DEBUG - Starting WinSW in service mode
+2026-06-30 13:27:54,227 INFO  - Starting C:\Users\admin\AppData\Local\Python\bin\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8080
+2026-06-30 13:27:54,265 INFO  - Started process 5920
+2026-06-30 13:27:54,277 DEBUG - Forwarding logs of the process System.Diagnostics.Process (python) to WinSW.RollingLogAppender
