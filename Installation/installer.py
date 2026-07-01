@@ -331,10 +331,19 @@ def main():
         f.write("instpath: C:\\Games\\Ubisoft\\\nminimize_to_systray: true\n")
 
     # --- EA App: machine-level game install path ---
-    run_cmd(
-        r'reg add "HKLM\SOFTWARE\Electronic Arts\EA Desktop" '
-        r'/v "InstallPath" /t REG_SZ /d "C:\Games\EA\" /f'
-    )
+    # Use PowerShell registry cmdlets instead of reg.exe — reg add hangs when
+    # EA's background service still holds the key open even after sc stop.
+    try:
+        subprocess.run(
+            'powershell -NonInteractive -Command "'
+            'New-Item -Path \'HKLM:\\SOFTWARE\\Electronic Arts\\EA Desktop\' -Force | Out-Null; '
+            'Set-ItemProperty -Path \'HKLM:\\SOFTWARE\\Electronic Arts\\EA Desktop\' '
+            '-Name InstallPath -Value \'C:\\Games\\EA\\\' -Type String -Force'
+            '"',
+            shell=True, capture_output=True, text=True
+        )
+    except subprocess.TimeoutExpired:
+        print("  EA registry write timed out, skipping (BootOS.cmd will not override this path).")
 
     # --- Battle.net: seed default game directory (ProgramData) ---
     # Battle.net will merge its own keys into this file on first launch,
