@@ -16,7 +16,7 @@ try {
     $UserListPath = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList"
     & reg add "`"$UserListPath`"" /v "$UserName" /t REG_DWORD /d 1 /f | Out-Null
 
-    Write-Output "--- SUCCESS: $UserName created. Log in now to generate the Playnite profile. ---"
+    Write-Output "--- SUCCESS: $UserName created. Windows will now build the profile from the Golden Template. ---"
 }
 catch {
     Write-Error "Failed: $_"
