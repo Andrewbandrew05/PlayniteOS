@@ -123,12 +123,34 @@ def main():
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe install")
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe start")
 
-    # 7. Registry Lockdown (Default Template)
-    print("\n[7/8] Applying Lockdown to Default Template...")
+    # Create the BootOS Shell Script
+    print("\nCreating BootOS Shell Script...")
+    boot_script_path = os.path.join(default_playnite, "BootOS.cmd")
+    boot_script_content = """@echo off
+:: 1. Inject Steam Identity into Current User Registry
+reg add "HKCU\\Software\\Valve\\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam" /f >nul
+reg add "HKCU\\Software\\Valve\\Steam" /v "SteamExe" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" /f >nul
+
+:: 2. Launch Steam silently in the background
+start "" "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" -silent
+
+:: 3. Launch Playnite and WAIT for it to close
+"%USERPROFILE%\\Playnite\\Playnite.FullscreenApp.exe"
+
+:: 4. Log the user off when Playnite is closed
+logoff
+"""
+    with open(boot_script_path, "w") as f:
+        f.write(boot_script_content)
+    
+    # 8. Registry Lockdown (Default Template)
+    print("\n[8/9] Applying Lockdown to Default Template...")
     run_cmd('reg load "HKU\\DefaultTemplate" "C:\\Users\\Default\\NTUSER.DAT"')
     
     reg_key = r"HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
-    reg_data = r"%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
+    
+    # Point the Shell to our new BootOS script instead of the raw exe
+    reg_data = r"%USERPROFILE%\Playnite\BootOS.cmd"
     subprocess.run(["reg", "add", reg_key, "/v", "Shell", "/t", "REG_EXPAND_SZ", "/d", reg_data, "/f"], capture_output=True)
     
     run_cmd(r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f')
