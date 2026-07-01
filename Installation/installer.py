@@ -114,7 +114,7 @@ def main():
     # 8. Registry Lockdown (Default Template)
     print("\n[8/8] Applying Lockdown to Default Template...")
     run_cmd('reg load "HKU\\DefaultTemplate" "C:\\Users\\Default\\NTUSER.DAT"')
-    shell_val = r"%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
+    shell_val = r"^%USERPROFILE^%\Playnite\Playnite.FullscreenApp.exe"
     run_cmd(fr'reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_EXPAND_SZ /d "{shell_val}" /f')
     run_cmd(r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f')
     run_cmd('reg unload "HKU\\DefaultTemplate"')
