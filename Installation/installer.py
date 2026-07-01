@@ -60,9 +60,9 @@ def main():
 
     # 4. Install Steam Globally
     print("\n[4/9] Installing Steam to Global Launchers...")
-    steam_setup = r"C:\PlayniteOS\Launchers\steam_setup.exe"
+    steam_setup = r"C:\PlayniteOS\MasterSeed\Launchers\steam_setup.exe"
     download(STEAM_URL, steam_setup)
-    run_cmd(fr"{steam_setup} /S /D=C:\PlayniteOS\Launchers\Steam")
+    run_cmd(fr"{steam_setup} /S /D=C:\PlayniteOS\MasterSeed\Launchers\Steam")
 
     # 5. Setup Playnite Portable Master Seed
     print("\n[5/9] Setting up Playnite Portable Seed...")
