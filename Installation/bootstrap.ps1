@@ -15,19 +15,30 @@ Invoke-WebRequest "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-
 if (Test-Path $PyDir) { Remove-Item $PyDir -Recurse -Force }
 Expand-Archive $PyZip -DestinationPath $PyDir -Force
 
-# 3. Clean up the old local installer script if it exists
+# Enable 'site' packages so the portable installer environment can run Pip
+$PthFile = "$PyDir\python311._pth"
+(Get-Content $PthFile) -replace '#import site', 'import site' | Set-Content $PthFile
+
+# 3. Secure the Bootstrapper Environment using native Windows Trust Store
+Write-Host "Injecting Windows SSL Truststore..." -ForegroundColor Cyan
+Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile "$PyDir\get-pip.py"
+& "$PyDir\python.exe" "$PyDir\get-pip.py" --quiet
+# Use trusted-host flags JUST for this bootstrap pip install, as we don't have truststore yet
+& "$PyDir\python.exe" -m pip install truststore --quiet --trusted-host pypi.org --trusted-host files.pythonhosted.org
+
+# 4. Clean up the old local installer script if it exists
 Write-Host "Downloading Installer from GitHub..." -ForegroundColor Cyan
 if (Test-Path "$LocalInstallDir\installer.py") { 
     Remove-Item "$LocalInstallDir\installer.py" -Force 
 }
 
-# 4. Use headers to smash through GitHub's CDN cache and fetch the fresh script
+# 5. Use headers to smash through GitHub's CDN cache and fetch the fresh script
 $Headers = @{
     "Cache-Control" = "no-cache"
     "Pragma"        = "no-cache"
 }
 Invoke-WebRequest "$RepoUrl/Installation/installer.py" -OutFile "$LocalInstallDir\installer.py" -Headers $Headers
 
-# 5. Hand over control to Python
+# 6. Hand over control to Python wrapped in the Truststore injection layer
 Write-Host "Handing over to Python..." -ForegroundColor Green
-& "$PyDir\python.exe" "$LocalInstallDir\installer.py"
+& "$PyDir\python.exe" -c "import truststore; truststore.inject_into_ssl(); import subprocess; subprocess.run(['$PyDir\python.exe', '$LocalInstallDir\installer.py'])"
