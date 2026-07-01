@@ -11,6 +11,7 @@ PLAYNITE_URL = "https://github.com/JosefNemec/Playnite/releases/download/10.31/P
 STEAM_URL = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 WINSW_URL = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
+# Updated to API Endpoint
 EXT_STEAM = "https://api.playnite.link/api/v1/addons/download/SteamLibrary"
 
 def run_cmd(cmd):
@@ -20,7 +21,14 @@ def run_cmd(cmd):
 def download(url, dest):
     print(f"Downloading: {url}")
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    urllib.request.urlretrieve(url, dest)
+    
+    # Use a custom Request with a User-Agent to prevent API rejections/blocks
+    req = urllib.request.Request(
+        url, 
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+    )
+    with urllib.request.urlopen(req) as response, open(dest, 'wb') as out_file:
+        shutil.copyfileobj(response, out_file)
 
 def main():
     print("==========================================")
@@ -64,19 +72,19 @@ def main():
     pext_path = r"C:\PlayniteOS\steam_ext.pext"
     download(EXT_STEAM, pext_path)
     
-    # Extract the nested contents securely
+    # Safe extraction handling for .pext containers
     with zipfile.ZipFile(pext_path, 'r') as zip_ref:
-        # Check if the extension files are nested inside an inner folder/archive
         zip_ref.extractall(ext_dir)
-        
-    # Clean up the downloaded file
+    
     if os.path.exists(pext_path):
         os.remove(pext_path)
 
     # 5. Pull GitHub Assets (Core, Scripts, and Golden Config)
     print("\n[5/8] Pulling GitHub Assets...")
     temp_extract_path = r"C:\PlayniteOS\repo_tmp"
-    with urllib.request.urlopen(REPO_ZIP_URL) as response:
+    
+    req = urllib.request.Request(REPO_ZIP_URL, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req) as response:
         with zipfile.ZipFile(io.BytesIO(response.read())) as zip_ref:
             zip_ref.extractall(temp_extract_path)
     
