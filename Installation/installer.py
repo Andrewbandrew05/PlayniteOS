@@ -98,6 +98,9 @@ def main():
 
     download("https://bootstrap.pypa.io/get-pip.py", r"C:\PlayniteOS\Core\Python\get-pip.py")
     run_cmd(r"C:\PlayniteOS\Core\Python\python.exe C:\PlayniteOS\Core\Python\get-pip.py")
+    
+    # Inject truststore system-wide into the permanent Core engine as well so it never runs into SSL errors later
+    run_cmd(r"C:\PlayniteOS\Core\Python\python.exe -m pip install truststore")
     run_cmd(r"C:\PlayniteOS\Core\Python\python.exe -m pip install fastapi uvicorn pynacl pyyaml requests")
 
     download(WINSW_URL, r"C:\PlayniteOS\Core\PlayniteOS-Service.exe")
@@ -105,7 +108,7 @@ def main():
     <id>PlayniteOS-Core</id>
     <name>PlayniteOS Core API</name>
     <executable>C:\\PlayniteOS\\Core\\Python\\python.exe</executable>
-    <arguments>C:\\PlayniteOS\\Core\\main.py</arguments>
+    <arguments>-c "import truststore; truststore.inject_into_ssl(); import subprocess; subprocess.run(['C:\\PlayniteOS\\Core\\Python\\python.exe', 'C:\\PlayniteOS\\Core\\main.py'])"</arguments>
     <log mode="roll"></log>
     </service>"""
     with open(r"C:\PlayniteOS\Core\PlayniteOS-Service.xml", 'w') as f:
@@ -117,7 +120,6 @@ def main():
     print("\n[7/8] Applying Lockdown to Default Template...")
     run_cmd('reg load "HKU\\DefaultTemplate" "C:\\Users\\Default\\NTUSER.DAT"')
     
-    # Force literal %USERPROFILE% using list format
     reg_key = r"HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
     reg_data = r"%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
     subprocess.run(["reg", "add", reg_key, "/v", "Shell", "/t", "REG_EXPAND_SZ", "/d", reg_data, "/f"], capture_output=True)
