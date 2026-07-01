@@ -1,0 +1,8 @@
+{
+  "UseCustomSteamInstallationPath": true,
+  "CustomSteamInstallationPath": "..\\..\\Launchers\\Steam",
+  "ImportInstalledGames": true,
+  "ImportUninstalledGames": true,
+  "StartSteamClickAction": 1,
+  "SteamQuietLaunch": true
+}
