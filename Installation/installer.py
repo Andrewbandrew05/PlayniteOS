@@ -11,8 +11,6 @@ PLAYNITE_URL = "https://github.com/JosefNemec/Playnite/releases/download/10.31/P
 STEAM_URL = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 WINSW_URL = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
-# Updated to API Endpoint
-EXT_STEAM = "https://api.playnite.link/api/v1/addons/download/SteamLibrary"
 
 def run_cmd(cmd):
     print(f" > {cmd}")
@@ -63,21 +61,6 @@ def main():
     # Create the Global Junction for Games
     junction_cmd = fr'powershell -Command "New-Item -Path \'{steam_path}\steamapps\' -ItemType Junction -Value \'C:\Games\Steam\steamapps\' -Force"'
     run_cmd(junction_cmd)
-
-    # 4. Inject Steam Extension
-    print("\n[4/8] Injecting Steam Extension...")
-    ext_dir = os.path.join(default_playnite, "Extensions", "SteamLibrary")
-    os.makedirs(ext_dir, exist_ok=True)
-    
-    pext_path = r"C:\PlayniteOS\steam_ext.pext"
-    download(EXT_STEAM, pext_path)
-    
-    # Safe extraction handling for .pext containers
-    with zipfile.ZipFile(pext_path, 'r') as zip_ref:
-        zip_ref.extractall(ext_dir)
-    
-    if os.path.exists(pext_path):
-        os.remove(pext_path)
 
     # 5. Pull GitHub Assets (Core, Scripts, and Golden Config)
     print("\n[5/8] Pulling GitHub Assets...")
