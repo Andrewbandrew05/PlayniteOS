@@ -17,7 +17,8 @@ try {
     # 2. Define Paths
     $ProfilePath = "C:\Users\$UserName"
     $PlayniteDir = "$ProfilePath\Playnite"
-    $PlayniteExe = "%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
+    # Use SINGLE QUOTES to prevent the Admin's path from being injected
+    $PlayniteExe = '%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe'
 
     # 3. Pre-stage the Profile Folder and Hive
     # Windows won't create the NTUSER.DAT until the first login, so we do it now
@@ -43,15 +44,16 @@ try {
     # 6. SET THE SHELL (Registry Hive Injection)
     Write-Output "Step 4: Injecting Custom Shell into Registry..."
     
-    # MOUNT the user's registry file so we can edit it
+    # MOUNT the user's registry file
     & reg load "HKU\TempHive_$UserName" "$ProfilePath\NTUSER.DAT" | Out-Null
     
     $WinlogonKey = "HKU\TempHive_$UserName\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
     
-    # ADD the Shell key (Note the extra quotes to handle the space in 'Windows NT')
-    & reg add "`"$WinlogonKey`"" /v "Shell" /t REG_EXPAND_SZ /d "$PlayniteExe" /f | Out-Null
+    # Use single quotes for the data to ensure %USERPROFILE% stays literal
+    # We pass the variables directly; PowerShell handles the quoting for the external command
+    & reg add $WinlogonKey /v "Shell" /t REG_EXPAND_SZ /d $PlayniteExe /f | Out-Null
     
-    # UNLOAD the registry file to save changes
+    # UNLOAD the registry file
     [gc]::Collect()
     [gc]::WaitForPendingFinalizers()
     & reg unload "HKU\TempHive_$UserName" | Out-Null
