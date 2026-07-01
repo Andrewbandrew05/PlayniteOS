@@ -3,9 +3,10 @@ import subprocess
 import urllib.request
 import zipfile
 import shutil
+import io
 
 # --- CONFIGURATION ---
-REPO_RAW = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main"
+REPO_ZIP_URL = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/heads/main.zip"
 PLAYNITE_URL = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 WINSW_URL = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
@@ -22,7 +23,7 @@ def download(url, dest):
 
 def main():
     print("==========================================")
-    print("   PlayniteOS Mark 1 Master Installer     ")
+    print("    PlayniteOS Mark 1 Master Installer     ")
     print("==========================================")
 
     # 1. Create Directory Structure
@@ -35,8 +36,32 @@ def main():
     for p in paths:
         os.makedirs(p, exist_ok=True)
 
-    # 2. Setup Permanent Embedded Python for the Core Service
-    print("\n[2/9] Setting up Reproducible Python Core...")
+    # 2. Pull All Assets from GitHub Repo via ZIP
+    print("\n[2/9] Downloading and Extracting GitHub Repository...")
+    temp_extract_path = r"C:\PlayniteOS\repo_tmp"
+    
+    # Download zip into memory and extract
+    with urllib.request.urlopen(REPO_ZIP_URL) as response:
+        with zipfile.ZipFile(io.BytesIO(response.read())) as zip_ref:
+            zip_ref.extractall(temp_extract_path)
+    
+    # GitHub names the inner folder "RepoName-BranchName" (PlayniteOS-main)
+    repo_root = os.path.join(temp_extract_path, "PlayniteOS-main")
+    
+    # Copy directory contents over to destination targets
+    shutil.copytree(os.path.join(repo_root, "Scripts"), r"C:\PlayniteOS\Scripts", dirs_exist_ok=True)
+    shutil.copytree(os.path.join(repo_root, "Core"), r"C:\PlayniteOS\Core", dirs_exist_ok=True)
+    
+    # Handle the specific nested steam config placement
+    steam_config_dest = r"C:\PlayniteOS\MasterSeed\Playnite\ExtensionsData\Playnite.SteamLibrary\config.json"
+    os.makedirs(os.path.dirname(steam_config_dest), exist_ok=True)
+    shutil.copy2(os.path.join(repo_root, "Configs", "SteamConfig.json"), steam_config_dest)
+    
+    # Clean up the temporary extracted folder
+    shutil.rmtree(temp_extract_path)
+
+    # 3. Setup Permanent Embedded Python for the Core Service
+    print("\n[3/9] Setting up Reproducible Python Core...")
     py_tmp = r"C:\PlayniteOS\Core\py_tmp.zip"
     download(PYTHON_EMBED_URL, py_tmp)
     with zipfile.ZipFile(py_tmp, 'r') as zip_ref:
@@ -51,21 +76,21 @@ def main():
         for line in lines:
             f.write(line.replace('#import site', 'import site'))
 
-    # 3. Install Pip and Dependencies for the Core API
-    print("\n[3/9] Installing API Dependencies...")
+    # 4. Install Pip and Dependencies for the Core API
+    print("\n[4/9] Installing API Dependencies...")
     get_pip = r"C:\PlayniteOS\Core\Python\get-pip.py"
     download("https://bootstrap.pypa.io/get-pip.py", get_pip)
     run_cmd(fr"C:\PlayniteOS\Core\Python\python.exe {get_pip}")
     run_cmd(r"C:\PlayniteOS\Core\Python\python.exe -m pip install fastapi uvicorn pynacl pyyaml requests")
 
-    # 4. Install Steam Globally
-    print("\n[4/9] Installing Steam to Global Launchers...")
+    # 5. Install Steam Globally
+    print("\n[5/9] Installing Steam to Global Launchers...")
     steam_setup = r"C:\PlayniteOS\MasterSeed\Launchers\steam_setup.exe"
     download(STEAM_URL, steam_setup)
     run_cmd(fr"{steam_setup} /S /D=C:\PlayniteOS\MasterSeed\Launchers\Steam")
 
-    # 5. Setup Playnite Portable Master Seed
-    print("\n[5/9] Setting up Playnite Portable Seed...")
+    # 6. Setup Playnite Portable Master Seed
+    print("\n[6/9] Setting up Playnite Portable Seed...")
     pn_zip = r"C:\PlayniteOS\playnite_tmp.zip"
     download(PLAYNITE_URL, pn_zip)
     with zipfile.ZipFile(pn_zip, 'r') as zip_ref:
@@ -73,16 +98,6 @@ def main():
     # Create portable flag
     open(r"C:\PlayniteOS\MasterSeed\Playnite\playnite.portable", 'a').close()
     os.remove(pn_zip)
-
-    # 6. Pull Assets from your GitHub Repo
-    print("\n[6/9] Pulling Scripts and Configs from GitHub...")
-    assets = [
-        ("Scripts/CreateUser.ps1", r"C:\PlayniteOS\Scripts\CreateUser.ps1"),
-        ("Core/main.py", r"C:\PlayniteOS\Core\main.py"),
-        ("Configs/SteamConfig.json", r"C:\PlayniteOS\MasterSeed\Playnite\ExtensionsData\Playnite.SteamLibrary\config.json")
-    ]
-    for src, dest in assets:
-        download(f"{REPO_RAW}/{src}", dest)
 
     # 7. Configure WinSW Service
     print("\n[7/9] Configuring PlayniteOS Background Service...")
@@ -127,7 +142,7 @@ def main():
     run_cmd(fw_cmd)    
 
     print("\n==========================================")
-    print("   INSTALLATION COMPLETE! REBOOT NOW.     ")
+    print("    INSTALLATION COMPLETE! REBOOT NOW.     ")
     print("==========================================")
 
 if __name__ == "__main__":
