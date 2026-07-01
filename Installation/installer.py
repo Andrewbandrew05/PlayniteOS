@@ -60,9 +60,18 @@ def main():
     print("\n[4/8] Injecting Steam Extension...")
     ext_dir = os.path.join(default_playnite, "Extensions", "SteamLibrary")
     os.makedirs(ext_dir, exist_ok=True)
-    download(EXT_STEAM, r"C:\PlayniteOS\steam_ext.pext")
-    with zipfile.ZipFile(r"C:\PlayniteOS\steam_ext.pext", 'r') as zip_ref:
+    
+    pext_path = r"C:\PlayniteOS\steam_ext.pext"
+    download(EXT_STEAM, pext_path)
+    
+    # Extract the nested contents securely
+    with zipfile.ZipFile(pext_path, 'r') as zip_ref:
+        # Check if the extension files are nested inside an inner folder/archive
         zip_ref.extractall(ext_dir)
+        
+    # Clean up the downloaded file
+    if os.path.exists(pext_path):
+        os.remove(pext_path)
 
     # 5. Pull GitHub Assets (Core, Scripts, and Golden Config)
     print("\n[5/8] Pulling GitHub Assets...")
