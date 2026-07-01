@@ -129,7 +129,7 @@ def main():
     print("\n[5/15] Installing GOG Galaxy...")
     gog_setup = fr"{TEMP_DIR}\gog_setup.exe"
     download(GOG_URL, gog_setup)
-    run_cmd(fr'"{gog_setup}" /SILENT /NORESTART')
+    run_cmd(fr'"{gog_setup}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-')
 
     # ===========================================================
     # [6/15] Install Ubisoft Connect (Global)
