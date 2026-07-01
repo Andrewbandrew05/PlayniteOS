@@ -23,52 +23,66 @@ def download(url, dest):
 
 def main():
     print("==========================================")
-    print("    PlayniteOS Mark 1 Master Installer     ")
+    print("    PlayniteOS Mark 1: Golden Template    ")
     print("==========================================")
 
-    # 1. Create Directory Structure
-    print("\n[1/9] Creating Directories...")
-    paths = [
-        r"C:\Games\Steam", r"C:\Games\Epic",
-        r"C:\PlayniteOS\Core\Python", r"C:\PlayniteOS\Scripts",
-        r"C:\PlayniteOS\MasterSeed\Playnite", r"C:\PlayniteOS\Launchers"
-    ]
-    for p in paths:
-        os.makedirs(p, exist_ok=True)
+    # 1. Create Global Silos
+    print("\n[1/8] Creating Global Silos...")
+    os.makedirs(r"C:\Games\Steam\steamapps", exist_ok=True)
+    os.makedirs(r"C:\PlayniteOS\Core\Python", exist_ok=True)
+    os.makedirs(r"C:\PlayniteOS\Scripts", exist_ok=True)
 
-    # 2. Pull All Assets from GitHub Repo via ZIP
-    print("\n[2/9] Downloading and Extracting GitHub Repository...")
-    temp_extract_path = r"C:\PlayniteOS\repo_tmp"
+    # 2. Setup Default User Playnite (The Master Seed)
+    print("\n[2/8] Building Master Seed in Default User...")
+    default_playnite = r"C:\Users\Default\Playnite"
+    os.makedirs(default_playnite, exist_ok=True)
     
-    # Download zip into memory and extract
+    # Download and Extract Playnite
+    pn_zip = r"C:\PlayniteOS\playnite_tmp.zip"
+    download(PLAYNITE_URL, pn_zip)
+    with zipfile.ZipFile(pn_zip, 'r') as zip_ref:
+        zip_ref.extractall(default_playnite)
+    open(os.path.join(default_playnite, "playnite.portable"), 'a').close()
+    os.remove(pn_zip)
+
+    # 3. Install Steam into Default User
+    print("\n[3/8] Installing Steam into Default Template...")
+    steam_path = os.path.join(default_playnite, "Launchers", "Steam")
+    steam_setup = r"C:\PlayniteOS\steam_setup.exe"
+    download(STEAM_URL, steam_setup)
+    run_cmd(fr"{steam_setup} /S /D={steam_path}")
+    
+    # Create the Global Junction inside the Default Template
+    # When Windows copies 'Default' to 'NewUser', it will copy this junction!
+    print("Creating Global Junction for Steam Games...")
+    junction_cmd = fr'powershell -Command "New-Item -Path \'{steam_path}\steamapps\' -ItemType Junction -Value \'C:\Games\Steam\steamapps\' -Force"'
+    run_cmd(junction_cmd)
+
+    # 4. Pull GitHub Assets (Core & Scripts)
+    print("\n[4/8] Pulling GitHub Assets...")
+    temp_extract_path = r"C:\PlayniteOS\repo_tmp"
     with urllib.request.urlopen(REPO_ZIP_URL) as response:
         with zipfile.ZipFile(io.BytesIO(response.read())) as zip_ref:
             zip_ref.extractall(temp_extract_path)
     
-    # GitHub names the inner folder "RepoName-BranchName" (PlayniteOS-main)
     repo_root = os.path.join(temp_extract_path, "PlayniteOS-main")
-    
-    # Copy directory contents over to destination targets
     shutil.copytree(os.path.join(repo_root, "Scripts"), r"C:\PlayniteOS\Scripts", dirs_exist_ok=True)
     shutil.copytree(os.path.join(repo_root, "Core"), r"C:\PlayniteOS\Core", dirs_exist_ok=True)
     
-    # Handle the specific nested steam config placement
-    steam_config_dest = r"C:\PlayniteOS\MasterSeed\Playnite\ExtensionsData\Playnite.SteamLibrary\config.json"
+    # Inject Golden Steam Config into Default Template
+    steam_config_dest = os.path.join(default_playnite, "ExtensionsData", "Playnite.SteamLibrary", "config.json")
     os.makedirs(os.path.dirname(steam_config_dest), exist_ok=True)
     shutil.copy2(os.path.join(repo_root, "Configs", "SteamConfig.json"), steam_config_dest)
-    
-    # Clean up the temporary extracted folder
     shutil.rmtree(temp_extract_path)
 
-    # 3. Setup Permanent Embedded Python for the Core Service
-    print("\n[3/9] Setting up Reproducible Python Core...")
+    # 5. Setup Embedded Python Core
+    print("\n[5/8] Setting up Python Core...")
     py_tmp = r"C:\PlayniteOS\Core\py_tmp.zip"
     download(PYTHON_EMBED_URL, py_tmp)
     with zipfile.ZipFile(py_tmp, 'r') as zip_ref:
         zip_ref.extractall(r"C:\PlayniteOS\Core\Python")
     os.remove(py_tmp)
     
-    # Enable site-packages in the embedded environment
     pth_file = r"C:\PlayniteOS\Core\Python\python311._pth"
     with open(pth_file, 'r') as f:
         lines = f.readlines()
@@ -76,74 +90,41 @@ def main():
         for line in lines:
             f.write(line.replace('#import site', 'import site'))
 
-    # 4. Install Pip and Dependencies for the Core API
-    print("\n[4/9] Installing API Dependencies...")
-    get_pip = r"C:\PlayniteOS\Core\Python\get-pip.py"
-    download("https://bootstrap.pypa.io/get-pip.py", get_pip)
-    run_cmd(fr"C:\PlayniteOS\Core\Python\python.exe {get_pip}")
+    # 6. Install API Dependencies
+    print("\n[6/8] Installing API Dependencies...")
+    download("https://bootstrap.pypa.io/get-pip.py", r"C:\PlayniteOS\Core\Python\get-pip.py")
+    run_cmd(r"C:\PlayniteOS\Core\Python\python.exe C:\PlayniteOS\Core\Python\get-pip.py")
     run_cmd(r"C:\PlayniteOS\Core\Python\python.exe -m pip install fastapi uvicorn pynacl pyyaml requests")
 
-    # 5. Install Steam Globally
-    print("\n[5/9] Installing Steam to Global Launchers...")
-    steam_setup = r"C:\PlayniteOS\MasterSeed\Launchers\steam_setup.exe"
-    download(STEAM_URL, steam_setup)
-    run_cmd(fr"{steam_setup} /S /D=C:\PlayniteOS\MasterSeed\Launchers\Steam")
-
-    # 6. Setup Playnite Portable Master Seed
-    print("\n[6/9] Setting up Playnite Portable Seed...")
-    pn_zip = r"C:\PlayniteOS\playnite_tmp.zip"
-    download(PLAYNITE_URL, pn_zip)
-    with zipfile.ZipFile(pn_zip, 'r') as zip_ref:
-        zip_ref.extractall(r"C:\PlayniteOS\MasterSeed\Playnite")
-    # Create portable flag
-    open(r"C:\PlayniteOS\MasterSeed\Playnite\playnite.portable", 'a').close()
-    os.remove(pn_zip)
-
     # 7. Configure WinSW Service
-    print("\n[7/9] Configuring PlayniteOS Background Service...")
+    print("\n[7/8] Configuring Background Service...")
     download(WINSW_URL, r"C:\PlayniteOS\Core\PlayniteOS-Service.exe")
     xml_content = """<service>
     <id>PlayniteOS-Core</id>
     <name>PlayniteOS Core API</name>
-    <description>Manages PlayniteOS User Creation and Lockdown.</description>
     <executable>C:\\PlayniteOS\\Core\\Python\\python.exe</executable>
     <arguments>C:\\PlayniteOS\\Core\\main.py</arguments>
     <log mode="roll"></log>
     </service>"""
     with open(r"C:\PlayniteOS\Core\PlayniteOS-Service.xml", 'w') as f:
         f.write(xml_content)
-    
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe install")
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe start")
 
     # 8. Registry Lockdown (Default Template)
-    print("\n[8/9] Applying Windows Lockdown to Default Template...")
+    print("\n[8/8] Applying Lockdown to Default Template...")
     run_cmd('reg load "HKU\\DefaultTemplate" "C:\\Users\\Default\\NTUSER.DAT"')
-    
-    # Set Shell to Playnite Fullscreen
     shell_val = r"%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
     run_cmd(fr'reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_EXPAND_SZ /d "{shell_val}" /f')
-    
-    # Force User List on Login
     run_cmd(r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f')
-    
     run_cmd('reg unload "HKU\\DefaultTemplate"')
 
-    # 9. Finalize Permissions
-    print("\n[9/9] Finalizing Permissions...")
+    # Final Permissions & Firewall
     run_cmd(r'icacls "C:\Games" /grant "Users:(OI)(CI)F" /T /C /Q')
     run_cmd(r'icacls "C:\PlayniteOS" /grant "Users:(OI)(CI)RX" /T /C /Q')
-    # Add the Firewall Rule
-    fw_cmd = (
-        'powershell.exe -Command "New-NetFirewallRule -DisplayName \'PlayniteOS-Core API\' '
-        '-Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080 '
-        '-Description \'Allows management of PlayniteOS via Python API.\' -ErrorAction SilentlyContinue"'
-    )
-    run_cmd(fw_cmd)    
+    run_cmd('powershell -Command "New-NetFirewallRule -DisplayName \'PlayniteOS-Core API\' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080"')
 
-    print("\n==========================================")
-    print("    INSTALLATION COMPLETE! REBOOT NOW.     ")
-    print("==========================================")
+    print("\n--- INSTALLATION COMPLETE! REBOOT NOW. ---")
 
 if __name__ == "__main__":
     main()
