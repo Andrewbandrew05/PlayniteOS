@@ -112,11 +112,16 @@ def main():
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe start")
 
     # 8. Registry Lockdown (Default Template)
-    print("\n[8/8] Applying Lockdown to Default Template...")
+    print("\n[8/9] Applying Windows Lockdown to Default Template...")
     run_cmd('reg load "HKU\\DefaultTemplate" "C:\\Users\\Default\\NTUSER.DAT"')
-    shell_val = r"^%USERPROFILE^%\Playnite\Playnite.FullscreenApp.exe"
-    run_cmd(fr'reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_EXPAND_SZ /d "{shell_val}" /f')
-    run_cmd(r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f')
+    
+    # We bypass run_cmd here to avoid the "helpful" shell expansion
+    reg_key = r"HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
+    reg_data = r"%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
+    
+    print(f" > reg add {reg_key} /v Shell /t REG_EXPAND_SZ /d {reg_data} /f")
+    subprocess.run(["reg", "add", reg_key, "/v", "Shell", "/t", "REG_EXPAND_SZ", "/d", reg_data, "/f"], capture_output=True)
+    
     run_cmd('reg unload "HKU\\DefaultTemplate"')
 
     # Final Permissions & Firewall
