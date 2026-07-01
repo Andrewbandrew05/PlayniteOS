@@ -282,6 +282,24 @@ def main():
     # ===========================================================
     print("\n[12/15] Configuring shared game library paths...")
 
+    # Wait for any still-running installer processes to finish, then kill
+    # every launcher that may have auto-launched after installation so their
+    # config files are not locked when we write to them.
+    print("  Waiting 30s for installers to settle...")
+    time.sleep(30)
+    print("  Killing launcher processes before modifying config files...")
+    for proc in [
+        "EpicGamesLauncher.exe",
+        "GalaxyClient.exe", "GalaxyClientService.exe",
+        "UbisoftConnect.exe", "UplayWebCore.exe",
+        "EADesktop.exe", "EABackgroundService.exe", "EALauncher.exe",
+        "Battle.net.exe", "Battle.net Helper.exe",
+        "AmazonGamesUI.exe",
+        "XboxPcApp.exe", "GamingServices.exe",
+    ]:
+        run_cmd(fr'taskkill /F /IM "{proc}" /T >nul 2>&1')
+    time.sleep(5)  # brief pause for file handles to release
+
     # --- Epic: seed default install path into GamerUser profile template ---
     # Per-user login & cloud saves stay in %LOCALAPPDATA%\EpicGamesLauncher\
     epic_cfg_dir = r"C:\Users\GamerUser\AppData\Local\EpicGamesLauncher\Saved\Config\Windows"
