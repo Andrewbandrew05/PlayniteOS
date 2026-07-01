@@ -18,7 +18,6 @@ REPO_ZIP_URL    = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/he
 PLAYNITE_URL    = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL       = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe"
-BATTLENET_URL   = "https://www.battle.net/download/getInstallerForApp?os=win&locale=enUS&version=LIVE&app=battle.net"
 WINSW_URL       = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
@@ -182,13 +181,13 @@ def main():
     # [8/15] Install Battle.net (Global)
     # ===========================================================
     print("\n[8/15] Installing Battle.net...")
-    # winget loses control of the Battle.net bootstrapper subprocess, causing an
-    # indefinite hang in automation contexts.  Download directly and invoke with
-    # --lang=enUS (skips the language-select dialog) and --no-launch-when-done
-    # (prevents Battle.net from auto-opening after install).
-    bnet_setup = fr"{TEMP_DIR}\\battlenet_setup.exe"
-    download(BATTLENET_URL, bnet_setup)
-    run_cmd(fr'"{bnet_setup}" --lang=enUS --no-launch-when-done')
+    # Run without --silent so the installer completes normally and leaves the
+    # Battle.net login window open.  The script restarts the machine at the end
+    # anyway, so the floating login window is harmless.
+    run_cmd(
+        "winget install -e --id Blizzard.BattleNet "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
@@ -460,7 +459,8 @@ reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t RE
     # Clean up installer temp files
     shutil.rmtree(TEMP_DIR, ignore_errors=True)
 
-    print("\n--- INSTALLATION COMPLETE! REBOOT TO APPLY. ---")
+    print("\n--- INSTALLATION COMPLETE! Rebooting in 15 seconds... ---")
+    run_cmd("shutdown /r /t 15 /c \"PlayniteOS installation complete. Rebooting...\"")
 
 
 if __name__ == "__main__":
