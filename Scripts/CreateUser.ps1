@@ -35,6 +35,10 @@ try {
     # 4. Permissions & Shell
     icacls "C:\Users\$UserName" /grant "${UserName}:(OI)(CI)F" /T /C /Q
     # (Insert your Registry Shell code here to point to the user's local Playnite.FullscreenApp.exe)
+    $PlayniteExe = "%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
+    $WinlogonKey = "HKU\TempHive_$UserName\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
+    # Set the Shell to Playnite Fullscreen
+    & reg add "$WinlogonKey" /v "Shell" /t REG_EXPAND_SZ /d "$PlayniteExe" /f | Out-Null
 
     Write-Output "--- SUCCESS: $UserName is isolated and space-efficient. ---"
 }
