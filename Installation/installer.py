@@ -5,6 +5,7 @@ import zipfile
 import shutil
 import io
 import json
+import time
 
 # --- ENFORCE NATIVE WINDOWS TRUST STORE ---
 try:
@@ -80,6 +81,16 @@ def main():
     os.makedirs(r"C:\PlayniteOS\Configs", exist_ok=True)
     os.makedirs(GAMER_USER_ROOT, exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
+
+    # Kick off Battle.net immediately so it installs in the background
+    # while the rest of the steps run.  It doesn't fully respect --silent
+    # but will complete on its own before the final reboot.
+    print("Launching Battle.net installer in background...")
+    subprocess.Popen(
+        "winget install -e --id Blizzard.BattleNet --silent "
+        "--accept-source-agreements --accept-package-agreements",
+        shell=True
+    )
 
     # Pre-install shared system prerequisites required by multiple launchers.
     # GOG Galaxy 2.0, EA App, and Xbox all need WebView2; GOG Galaxy and others
@@ -178,16 +189,9 @@ def main():
     run_cmd(fr'"{ea_setup}" /quiet /norestart')
 
     # ===========================================================
-    # [8/15] Install Battle.net (Global)
+    # [8/15] Battle.net (already running in background from step 1)
     # ===========================================================
-    print("\n[8/15] Installing Battle.net...")
-    # Run without --silent so the installer completes normally and leaves the
-    # Battle.net login window open.  The script restarts the machine at the end
-    # anyway, so the floating login window is harmless.
-    run_cmd(
-        "winget install -e --id Blizzard.BattleNet "
-        "--accept-source-agreements --accept-package-agreements"
-    )
+    print("\n[8/15] Battle.net installing in background, continuing...")
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
