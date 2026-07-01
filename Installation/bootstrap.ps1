@@ -39,21 +39,6 @@ $Headers = @{
 }
 Invoke-WebRequest "$RepoUrl/Installation/installer.py" -OutFile "$LocalInstallDir\installer.py" -Headers $Headers
 
-# 6. Hand over control to Python wrapped in the Truststore injection layer
+# 6. Hand over control to Python seamlessly
 Write-Host "Handing over to Python..." -ForegroundColor Green
-
-# Sanitize paths to use forward slashes so Python doesn't trip over \U or \T
-$PyExeClean = "$PyDir\python.exe".Replace("\", "/")
-$InstallerClean = "$LocalInstallDir\installer.py".Replace("\", "/")
-
-# Use a clean multi-line block passed directly via standard input
-$PythonScript = @"
-import truststore
-import subprocess
-
-truststore.inject_into_ssl()
-subprocess.run(['$PyExeClean', '$InstallerClean'])
-"@
-
-$PythonScript | & "$PyDir\python.exe"
-& "$PyDir\python.exe" -c "import truststore; truststore.inject_into_ssl(); import subprocess; subprocess.run(['$PyExeClean', '$InstallerClean'])"
+& "$PyDir\python.exe" "$LocalInstallDir\installer.py"
