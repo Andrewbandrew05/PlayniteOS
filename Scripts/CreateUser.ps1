@@ -22,7 +22,15 @@ try {
     if (!(Test-Path $UserSteamApps)) { New-Item -ItemType Directory -Path $UserSteamApps -Force }
    
     # Link the user's empty steamapps folder to the 100GB Global Silo
-    mklink /J "$UserSteamApps" "C:\Games\Steam\steamapps"
+    # 3. THE SPACE SAVER: Junction the heavy Game Folders
+    $UserSteamApps = "$UserPlayniteDir\Launchers\Steam\steamapps"
+    $GlobalSteamApps = "C:\Games\Steam\steamapps"
+    
+    if (!(Test-Path $UserSteamApps)) {
+        Write-Output "Creating Junction for Steam Games..."
+        # Use New-Item instead of mklink for PowerShell compatibility
+        New-Item -Path $UserSteamApps -ItemType Junction -Value $GlobalSteamApps -Force | Out-Null
+    }
 
     # 4. Permissions & Shell
     icacls "C:\Users\$UserName" /grant "${UserName}:(OI)(CI)F" /T /C /Q
