@@ -51,10 +51,12 @@ def send_action(action_name, params):
             "Content-Type": "application/json"
         }
 
-        response = requests.post(url, data=body_bytes, headers=headers)
         print(f"--- Action: {action_name} ---")
-        print(f"Status: {response.status_code}")
-        print(f"Response: {response.json()}")
+        with requests.post(url, data=body_bytes, headers=headers, timeout=120, stream=True) as response:
+            print(f"Status: {response.status_code}")
+            for line in response.iter_lines():
+                if line:
+                    print(line.decode("utf-8") if isinstance(line, bytes) else line)
 
     except Exception as e:
         print(f"Error: {e}")

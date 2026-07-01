@@ -1,7 +1,10 @@
 import os
 import subprocess
+import asyncio
+import json
 import yaml
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 import base64
@@ -60,23 +63,26 @@ async def run_action(
     if script_name not in script_map:
         raise HTTPException(status_code=404, detail="Action not found")
 
-    # 4. Run PowerShell as SYSTEM
-    # Arguments are passed via JSON body in the request
-    params = await request.json()
+    # 4. Parse params from the already-cached body bytes
+    params = json.loads(body)
     args = []
     for key, value in params.items():
         args.extend([f"-{key}", str(value)])
 
-    result = subprocess.run(
-        ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", script_map[script_name]] + args,
-        capture_output=True, text=True
-    )
+    script_path = script_map[script_name]
 
-    return {
-        "status": "success" if result.returncode == 0 else "error",
-        "stdout": result.stdout,
-        "stderr": result.stderr
-    }
+    async def generate():
+        process = await asyncio.create_subprocess_exec(
+            "powershell.exe", "-ExecutionPolicy", "Bypass", "-File", script_path, *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        async for line in process.stdout:
+            yield line.decode("utf-8", errors="replace")
+        await process.wait()
+        yield f"[done] exit code: {process.returncode}\n"
+
+    return StreamingResponse(generate(), media_type="text/plain")
 
 if __name__ == "__main__":
     import uvicorn
