@@ -38,7 +38,8 @@ try {
     $PlayniteExe = "%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
     $WinlogonKey = "HKU\TempHive_$UserName\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
     # Set the Shell to Playnite Fullscreen
-    & reg add "$WinlogonKey" /v "Shell" /t REG_EXPAND_SZ /d "$PlayniteExe" /f | Out-Null
+    # Wrap $UserListPath in extra quotes
+    & reg add "`"$UserListPath`"" /v "$UserName" /t REG_DWORD /d 1 /f | Out-Null
 
     Write-Output "--- SUCCESS: $UserName is isolated and space-efficient. ---"
 }
