@@ -5,6 +5,13 @@ import zipfile
 import shutil
 import io
 
+# --- ENFORCE NATIVE WINDOWS TRUST STORE ---
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass # Fallback if run outside the bootstrapper environment
+
 # --- CONFIGURATION ---
 REPO_ZIP_URL = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/heads/main.zip"
 PLAYNITE_URL = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
