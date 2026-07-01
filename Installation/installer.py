@@ -82,6 +82,20 @@ def main():
     os.makedirs(GAMER_USER_ROOT, exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
 
+    # Pre-install shared system prerequisites required by multiple launchers.
+    # GOG Galaxy 2.0, EA App, and Xbox all need WebView2; GOG Galaxy and others
+    # need VC++ 2015-2022.  Installing here ensures they're present before any
+    # launcher installer runs, even in --silent mode which skips bundled deps.
+    print("Installing shared prerequisites (WebView2, VC++ Redist)...")
+    run_cmd(
+        "winget install --id Microsoft.EdgeWebView2Runtime --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
+    run_cmd(
+        "winget install --id Microsoft.VCRedist.2015+.x64 --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
+
     # ===========================================================
     # [2/15] Build Playnite Master Seed in GamerUser Template
     # ===========================================================
