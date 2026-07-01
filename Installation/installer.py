@@ -82,11 +82,11 @@ def main():
     shutil.copytree(os.path.join(repo_root, "Scripts"), r"C:\PlayniteOS\Scripts", dirs_exist_ok=True)
     shutil.copytree(os.path.join(repo_root, "Core"), r"C:\PlayniteOS\Core", dirs_exist_ok=True)
     
-    # Inject Golden Steam Config
-    steam_config_dest = os.path.join(default_playnite, "ExtensionsData", "Playnite.SteamLibrary", "config.json")
+    # Inject Golden Steam Config using the Official Plugin GUID
+    steam_guid = "cb91dfc9-b977-43bf-8e70-55f46e410fab"
+    steam_config_dest = os.path.join(default_playnite, "ExtensionsData", steam_guid, "config.json")
     os.makedirs(os.path.dirname(steam_config_dest), exist_ok=True)
     shutil.copy2(os.path.join(repo_root, "Configs", "SteamConfig.json"), steam_config_dest)
-    shutil.rmtree(temp_extract_path)
 
     # 6. Setup Python Core & WinSW
     print("\n[6/8] Setting up Python Core & Service...")
