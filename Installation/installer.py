@@ -17,6 +17,7 @@ except ImportError:
 REPO_ZIP_URL    = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/heads/main.zip"
 PLAYNITE_URL    = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL       = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
+EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe"
 WINSW_URL       = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
@@ -154,10 +155,11 @@ def main():
     # [7/15] Install EA App (Global)
     # ===========================================================
     print("\n[7/15] Installing EA App...")
-    run_cmd(
-        "winget install --id ElectronicArts.EADesktop --silent "
-        "--accept-source-agreements --accept-package-agreements"
-    )
+    # winget does not suppress EA's bootstrapper UI reliably.
+    # Download directly from EA's CDN and pass WiX bootstrapper silent flags.
+    ea_setup = fr"{TEMP_DIR}\ea_setup.exe"
+    download(EA_URL, ea_setup)
+    run_cmd(fr'"{ea_setup}" /quiet /norestart')
 
     # ===========================================================
     # [8/15] Install Battle.net (Global)
