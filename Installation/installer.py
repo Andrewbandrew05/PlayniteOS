@@ -288,11 +288,17 @@ def main():
     print("  Waiting 30s for installers to settle...")
     time.sleep(30)
     print("  Killing launcher processes before modifying config files...")
+    # Stop the EA background service first — it holds registry handles open and
+    # will cause the EA reg add to hang if still running.
+    run_cmd("sc stop EABackgroundService >nul 2>&1")
+    run_cmd("sc stop EALocalHostSvc >nul 2>&1")
+    time.sleep(3)
     for proc in [
         "EpicGamesLauncher.exe",
         "GalaxyClient.exe", "GalaxyClientService.exe",
         "UbisoftConnect.exe", "UplayWebCore.exe",
         "EADesktop.exe", "EABackgroundService.exe", "EALauncher.exe",
+        "EALocalHostSvc.exe", "EACrashReporter.exe", "EAGEP.exe", "EAUpdater.exe",
         "Battle.net.exe", "Battle.net Helper.exe",
         "AmazonGamesUI.exe",
         "XboxPcApp.exe", "GamingServices.exe",
