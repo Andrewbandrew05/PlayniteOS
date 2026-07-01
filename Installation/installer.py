@@ -11,7 +11,7 @@ PLAYNITE_URL = "https://github.com/JosefNemec/Playnite/releases/download/10.31/P
 STEAM_URL = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 WINSW_URL = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
-EXT_STEAM = "https://github.com/JosefNemec/PlayniteExtensions/releases/download/v2.0/SteamLibrary_2_0.pext"
+EXT_STEAM = "https://api.playnite.link/api/v1/addons/download/SteamLibrary"
 
 def run_cmd(cmd):
     print(f" > {cmd}")
