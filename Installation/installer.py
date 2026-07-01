@@ -17,11 +17,6 @@ except ImportError:
 REPO_ZIP_URL    = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/heads/main.zip"
 PLAYNITE_URL    = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL       = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
-EPIC_URL        = "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi"
-UBISOFT_URL     = "https://static3.cdn.ubi.com/orbit/launcher_installer/UbisoftConnectInstaller.exe"
-EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe"
-BATTLENET_URL   = "https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe"
-AMAZON_URL      = "https://download.amazongames.com/AmazonGamesSetup.exe"
 WINSW_URL       = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
@@ -132,9 +127,10 @@ def main():
     # [4/15] Install Epic Games Launcher (Global)
     # ===========================================================
     print("\n[4/15] Installing Epic Games Launcher...")
-    epic_setup = fr"{TEMP_DIR}\epic_setup.msi"
-    download(EPIC_URL, epic_setup)
-    run_cmd(f"msiexec /i {epic_setup} /qn /norestart")
+    run_cmd(
+        "winget install -e --id EpicGames.EpicGamesLauncher --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [5/15] Install GOG Galaxy (Global)
@@ -149,33 +145,37 @@ def main():
     # [6/15] Install Ubisoft Connect (Global)
     # ===========================================================
     print("\n[6/15] Installing Ubisoft Connect...")
-    ubisoft_setup = fr"{TEMP_DIR}\ubisoft_setup.exe"
-    download(UBISOFT_URL, ubisoft_setup)
-    run_cmd(fr'"{ubisoft_setup}" /S')
+    run_cmd(
+        "winget install -e --id Ubisoft.Connect --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [7/15] Install EA App (Global)
     # ===========================================================
     print("\n[7/15] Installing EA App...")
-    ea_setup = fr"{TEMP_DIR}\ea_setup.exe"
-    download(EA_URL, ea_setup)
-    run_cmd(fr'"{ea_setup}" --quiet --norestart')
+    run_cmd(
+        "winget install --id ElectronicArts.EADesktop --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [8/15] Install Battle.net (Global)
     # ===========================================================
     print("\n[8/15] Installing Battle.net...")
-    bnet_setup = fr"{TEMP_DIR}\bnet_setup.exe"
-    download(BATTLENET_URL, bnet_setup)
-    run_cmd(fr'"{bnet_setup}" --lang=enUS --installpath="C:\Program Files (x86)\Battle.net"')
+    run_cmd(
+        "winget install -e --id Blizzard.BattleNet --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
     # ===========================================================
     print("\n[9/15] Installing Amazon Games...")
-    amazon_setup = fr"{TEMP_DIR}\amazon_setup.exe"
-    download(AMAZON_URL, amazon_setup)
-    run_cmd(fr'"{amazon_setup}" /S')
+    run_cmd(
+        "winget install -e --id Amazon.Games --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [10/15] Install Xbox Gaming Services (Global, via winget)
