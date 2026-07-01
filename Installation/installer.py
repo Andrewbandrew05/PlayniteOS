@@ -127,34 +127,34 @@ def main():
     print("\nCreating BootOS Shell Script...")
     boot_script_path = os.path.join(default_playnite, "BootOS.cmd")
     boot_script_content = """@echo off
-    :: 1. Inject Steam Identity into Current User Registry
-    reg add "HKCU\\Software\\Valve\\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam" /f >nul
-    reg add "HKCU\\Software\\Valve\\Steam" /v "SteamExe" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" /f >nul
+:: 1. Inject Steam Identity into Current User Registry
+reg add "HKCU\\Software\\Valve\\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam" /f >nul
+reg add "HKCU\\Software\\Valve\\Steam" /v "SteamExe" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" /f >nul
+
+:: 2. Launch Steam silently in the background
+start "" "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" -silent
+
+:: 3. Launch Playnite and WAIT for it to close
+"%USERPROFILE%\\Playnite\\Playnite.FullscreenApp.exe"
+
+:: 4. Log the user off when Playnite is closed
+:: (COMMENTED OUT FOR TESTING - Remove the '::' when you are ready for production)
+:: logoff
+"""
+    with open(boot_script_path, "w") as f:
+        f.write(boot_script_content)
+
+    # Create the Invisible VBScript Wrapper
+    print("Creating Invisible VBScript Wrapper...")
+    vbs_script_path = os.path.join(default_playnite, "BootOS.vbs")
     
-    :: 2. Launch Steam silently in the background
-    start "" "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" -silent
-    
-    :: 3. Launch Playnite and WAIT for it to close
-    "%USERPROFILE%\\Playnite\\Playnite.FullscreenApp.exe"
-    
-    :: 4. Log the user off when Playnite is closed
-    :: (COMMENTED OUT FOR TESTING - Remove the '::' when you are ready for production)
-    :: logoff
-    """
-        with open(boot_script_path, "w") as f:
-            f.write(boot_script_content)
-    
-        # Create the Invisible VBScript Wrapper
-        print("Creating Invisible VBScript Wrapper...")
-        vbs_script_path = os.path.join(default_playnite, "BootOS.vbs")
-        
-        # Use triple SINGLE quotes (''') here so the double quotes inside don't break Python
-        vbs_script_content = '''Set WshShell = CreateObject("WScript.Shell")
-    ' Run the CMD file completely hidden (0) and wait for it to close (True)
-    WshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\\Playnite\\BootOS.cmd""", 0, True
-    '''
-        with open(vbs_script_path, "w") as f:
-            f.write(vbs_script_content)
+    # Use triple SINGLE quotes (''') here so the double quotes inside don't break Python
+    vbs_script_content = '''Set WshShell = CreateObject("WScript.Shell")
+' Run the CMD file completely hidden (0) and wait for it to close (True)
+WshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\\Playnite\\BootOS.cmd""", 0, True
+'''
+    with open(vbs_script_path, "w") as f:
+        f.write(vbs_script_content)
     
     # 8. Registry Lockdown (Default Template)
     print("\n[8/9] Applying Lockdown to Default Template...")
