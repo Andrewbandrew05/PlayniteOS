@@ -123,25 +123,38 @@ def main():
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe install")
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe start")
 
-    # Create the BootOS Shell Script
+    # Create the BootOS Shell Script (CMD)
     print("\nCreating BootOS Shell Script...")
     boot_script_path = os.path.join(default_playnite, "BootOS.cmd")
     boot_script_content = """@echo off
-:: 1. Inject Steam Identity into Current User Registry
-reg add "HKCU\\Software\\Valve\\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam" /f >nul
-reg add "HKCU\\Software\\Valve\\Steam" /v "SteamExe" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" /f >nul
-
-:: 2. Launch Steam silently in the background
-start "" "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" -silent
-
-:: 3. Launch Playnite and WAIT for it to close
-"%USERPROFILE%\\Playnite\\Playnite.FullscreenApp.exe"
-
-:: 4. Log the user off when Playnite is closed
-logoff
-"""
-    with open(boot_script_path, "w") as f:
-        f.write(boot_script_content)
+    :: 1. Inject Steam Identity into Current User Registry
+    reg add "HKCU\\Software\\Valve\\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam" /f >nul
+    reg add "HKCU\\Software\\Valve\\Steam" /v "SteamExe" /t REG_SZ /d "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" /f >nul
+    
+    :: 2. Launch Steam silently in the background
+    start "" "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe" -silent
+    
+    :: 3. Launch Playnite and WAIT for it to close
+    "%USERPROFILE%\\Playnite\\Playnite.FullscreenApp.exe"
+    
+    :: 4. Log the user off when Playnite is closed
+    :: (COMMENTED OUT FOR TESTING - Remove the '::' when you are ready for production)
+    :: logoff
+    """
+        with open(boot_script_path, "w") as f:
+            f.write(boot_script_content)
+    
+        # Create the Invisible VBScript Wrapper
+        print("Creating Invisible VBScript Wrapper...")
+        vbs_script_path = os.path.join(default_playnite, "BootOS.vbs")
+        
+        # Use triple SINGLE quotes (''') here so the double quotes inside don't break Python
+        vbs_script_content = '''Set WshShell = CreateObject("WScript.Shell")
+    ' Run the CMD file completely hidden (0) and wait for it to close (True)
+    WshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\\Playnite\\BootOS.cmd""", 0, True
+    '''
+        with open(vbs_script_path, "w") as f:
+            f.write(vbs_script_content)
     
     # 8. Registry Lockdown (Default Template)
     print("\n[8/9] Applying Lockdown to Default Template...")
@@ -149,15 +162,15 @@ logoff
     
     reg_key = r"HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
     
-    # Point the Shell to our new BootOS script instead of the raw exe
-    reg_data = r"%USERPROFILE%\Playnite\BootOS.cmd"
+    # Point the Shell to the invisible VBScript wrapper
+    reg_data = r"wscript.exe %USERPROFILE%\Playnite\BootOS.vbs"
     subprocess.run(["reg", "add", reg_key, "/v", "Shell", "/t", "REG_EXPAND_SZ", "/d", reg_data, "/f"], capture_output=True)
     
     run_cmd(r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f')
     run_cmd('reg unload "HKU\\DefaultTemplate"')
 
-    # 8. Finalize Permissions & Firewall
-    print("\n[8/8] Finalizing Permissions and Firewall...")
+    # 9. Finalize Permissions & Firewall
+    print("\n[9/9] Finalizing Permissions and Firewall...")
     run_cmd(r'icacls "C:\Games" /grant "Users:(OI)(CI)F" /T /C /Q')
     run_cmd(r'icacls "C:\PlayniteOS" /grant "Users:(OI)(CI)RX" /T /C /Q')
     run_cmd('powershell -Command "New-NetFirewallRule -DisplayName \'PlayniteOS-Core API\' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080"')
