@@ -18,7 +18,7 @@ REPO_ZIP_URL    = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/he
 PLAYNITE_URL    = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL       = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 EPIC_URL        = "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi"
-GOG_URL         = "https://cdn.gog.com/open/galaxy/client/setup_galaxy_2.0.exe"
+GOG_URL         = "https://www.gog.com/galaxy/download"
 UBISOFT_URL     = "https://ubi.li/4vxt9"
 EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe"
 BATTLENET_URL   = "https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe"
@@ -64,7 +64,8 @@ def main():
     print("  PlayniteOS Mark 2.0: Universal Launcher ")
     print("==========================================")
 
-    DEFAULT_PLAYNITE = r"C:\Users\Default\Playnite"
+    GAMER_USER_ROOT  = r"C:\Users\GamerUser"
+    GAMER_PLAYNITE   = r"C:\Users\GamerUser\Playnite"
     TEMP_DIR         = r"C:\PlayniteOS\tmp"
 
     # ===========================================================
@@ -78,25 +79,27 @@ def main():
         os.makedirs(fr"C:\Games\{silo}", exist_ok=True)
     os.makedirs(r"C:\PlayniteOS\Core\Python", exist_ok=True)
     os.makedirs(r"C:\PlayniteOS\Scripts", exist_ok=True)
+    os.makedirs(r"C:\PlayniteOS\Configs", exist_ok=True)
+    os.makedirs(GAMER_USER_ROOT, exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
 
     # ===========================================================
-    # [2/15] Build Playnite Master Seed in Default User
+    # [2/15] Build Playnite Master Seed in GamerUser Template
     # ===========================================================
-    print("\n[2/15] Building Playnite Master Seed in Default User...")
-    os.makedirs(DEFAULT_PLAYNITE, exist_ok=True)
+    print("\n[2/15] Building Playnite Master Seed in GamerUser Template...")
+    os.makedirs(GAMER_PLAYNITE, exist_ok=True)
     pn_zip = fr"{TEMP_DIR}\playnite.zip"
     download(PLAYNITE_URL, pn_zip)
     with zipfile.ZipFile(pn_zip, "r") as z:
-        z.extractall(DEFAULT_PLAYNITE)
-    open(os.path.join(DEFAULT_PLAYNITE, "playnite.portable"), "a").close()
+        z.extractall(GAMER_PLAYNITE)
+    open(os.path.join(GAMER_PLAYNITE, "playnite.portable"), "a").close()
     os.remove(pn_zip)
 
     # ===========================================================
     # [3/15] Install Steam (Per-User Template + steamapps Junction)
     # ===========================================================
-    print("\n[3/15] Installing Steam into Default User Template...")
-    steam_path  = os.path.join(DEFAULT_PLAYNITE, "Launchers", "Steam")
+    print("\n[3/15] Installing Steam into GamerUser Template...")
+    steam_path  = os.path.join(GAMER_PLAYNITE, "Launchers", "Steam")
     steam_setup = fr"{TEMP_DIR}\steam_setup.exe"
     download(STEAM_URL, steam_setup)
     run_cmd(fr"{steam_setup} /S /D={steam_path}")
@@ -186,11 +189,17 @@ def main():
     repo_root = os.path.join(repo_tmp, "PlayniteOS-main")
     shutil.copytree(os.path.join(repo_root, "Scripts"), r"C:\PlayniteOS\Scripts", dirs_exist_ok=True)
     shutil.copytree(os.path.join(repo_root, "Core"),    r"C:\PlayniteOS\Core",    dirs_exist_ok=True)
+    shutil.copytree(os.path.join(repo_root, "Configs"), r"C:\PlayniteOS\Configs", dirs_exist_ok=True)
+
+    # Load the GamerUser registry config now so it's ready for the lockdown step.
+    with open(r"C:\PlayniteOS\Configs\GamerUserRegistry.json") as f:
+        gamer_reg = json.load(f)
+
     shutil.rmtree(repo_tmp)
 
     # Steam: per-user install, relative path from Playnite root.
     # Login tokens & cloud saves live in each user's %USERPROFILE%\Playnite\Launchers\Steam\userdata\
-    seed_playnite_config(DEFAULT_PLAYNITE, STEAM_GUID, {
+    seed_playnite_config(GAMER_PLAYNITE, STEAM_GUID, {
         "UseCustomSteamInstallationPath": True,
         "CustomSteamInstallationPath": "..\\..\\Launchers\\Steam",
         "ImportInstalledGames": True,
@@ -200,7 +209,7 @@ def main():
     })
 
     # Epic: global install; per-user login stored in %LOCALAPPDATA%\EpicGamesLauncher\
-    seed_playnite_config(DEFAULT_PLAYNITE, EPIC_GUID, {
+    seed_playnite_config(GAMER_PLAYNITE, EPIC_GUID, {
         "UseCustomLauncherPath": True,
         "CustomLauncherPath": r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
         "LauncherArguments": "-SkipBuildPatchPrereq",
@@ -211,7 +220,7 @@ def main():
     # Remaining launchers are global installs auto-detected via registry.
     # Per-user login data lives in each user's %LOCALAPPDATA% / %APPDATA%.
     for guid in [GOG_GUID, UBISOFT_GUID, EA_GUID, BATTLENET_GUID, XBOX_GUID, AMAZON_GUID]:
-        seed_playnite_config(DEFAULT_PLAYNITE, guid, {
+        seed_playnite_config(GAMER_PLAYNITE, guid, {
             "ImportInstalledGames": True,
             "ImportUninstalledGames": True,
         })
@@ -221,9 +230,9 @@ def main():
     # ===========================================================
     print("\n[12/15] Configuring shared game library paths...")
 
-    # --- Epic: seed default install path into Default User profile ---
+    # --- Epic: seed default install path into GamerUser profile template ---
     # Per-user login & cloud saves stay in %LOCALAPPDATA%\EpicGamesLauncher\
-    epic_cfg_dir = r"C:\Users\Default\AppData\Local\EpicGamesLauncher\Saved\Config\Windows"
+    epic_cfg_dir = r"C:\Users\GamerUser\AppData\Local\EpicGamesLauncher\Saved\Config\Windows"
     os.makedirs(epic_cfg_dir, exist_ok=True)
     with open(os.path.join(epic_cfg_dir, "GameUserSettings.ini"), "w") as f:
         f.write("[Launcher]\nDefaultAppInstallLocation=C:\\Games\\Epic\n")
@@ -238,9 +247,9 @@ def main():
             "startMinimized": True,
         }, f, indent=2)
 
-    # --- Ubisoft Connect: seed settings.yml into Default User profile ---
+    # --- Ubisoft Connect: seed settings.yml into GamerUser profile template ---
     # Per-user Ubisoft account data lives in %LOCALAPPDATA%\Ubisoft Game Launcher\
-    ubisoft_cfg_dir = r"C:\Users\Default\AppData\Local\Ubisoft Game Launcher"
+    ubisoft_cfg_dir = r"C:\Users\GamerUser\AppData\Local\Ubisoft Game Launcher"
     os.makedirs(ubisoft_cfg_dir, exist_ok=True)
     with open(os.path.join(ubisoft_cfg_dir, "settings.yml"), "w") as f:
         f.write("instpath: C:\\Games\\Ubisoft\\\nminimize_to_systray: true\n")
@@ -349,7 +358,7 @@ reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t RE
 :: 4. Logoff when Playnite exits (user switch / power-off flows)
 :: logoff
 """
-    with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.cmd"), "w") as f:
+    with open(os.path.join(GAMER_PLAYNITE, "BootOS.cmd"), "w") as f:
         f.write(boot_cmd_content)
 
     # BootOS.vbs - invisible launcher for BootOS.cmd (no console window)
@@ -358,42 +367,31 @@ reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t RE
         'WshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%")'
         ' & "\\Playnite\\BootOS.cmd""", 0, True\r\n'
     )
-    with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.vbs"), "w") as f:
+    with open(os.path.join(GAMER_PLAYNITE, "BootOS.vbs"), "w") as f:
         f.write(vbs_content)
 
-    # --- Bake Winlogon shell into Default User hive (all new accounts inherit this) ---
-    print("Applying Winlogon Shell lockdown to Default User hive...")
-    run_cmd('reg load "HKU\\DefaultTemplate" "C:\\Users\\Default\\NTUSER.DAT"')
+    # --- Bake GamerUser registry template from GamerUserRegistry.json ---
+    # The GamerUser hive is initialised from the clean Windows Default hive,
+    # then every key defined in GamerUserRegistry.json is applied on top.
+    # Edit GamerUserRegistry.json to adjust what new gamer accounts inherit
+    # without touching this script.
+    print("Baking GamerUser registry template from GamerUserRegistry.json...")
+    shutil.copy2(r"C:\Users\Default\NTUSER.DAT", r"C:\Users\GamerUser\NTUSER.DAT")
+    run_cmd('reg load "HKU\\GamerTemplate" "C:\\Users\\GamerUser\\NTUSER.DAT"')
 
-    reg_key   = r"HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
-    reg_shell = r"wscript.exe %USERPROFILE%\Playnite\BootOS.vbs"
-    subprocess.run(
-        ["reg", "add", reg_key, "/v", "Shell", "/t", "REG_EXPAND_SZ", "/d", reg_shell, "/f"],
-        capture_output=True,
-    )
-
-    # Bake per-user launcher library paths into the Default User hive so they are
-    # present even before the first BootOS.cmd run (e.g. if a launcher is invoked
-    # from a non-Playnite context).
-    hku = "HKU\\DefaultTemplate"
-    hku_regs = [
-        (fr"{hku}\Software\Valve\Steam",            "SteamPath",          r"%USERPROFILE%\Playnite\Launchers\Steam"),
-        (fr"{hku}\Software\Valve\Steam",            "SteamExe",           r"%USERPROFILE%\Playnite\Launchers\Steam\steam.exe"),
-        (fr"{hku}\Software\Ubisoft\Launcher",       "InstallDir",         r"C:\Games\Ubisoft\\"),
-        (fr"{hku}\Software\Amazon\Amazon Games App","GameInstallLocation", r"C:\Games\Amazon"),
-        (fr"{hku}\Software\Microsoft\GamingApp",    "GameContentPath",    r"C:\Games\Xbox"),
-    ]
-    for key, name, value in hku_regs:
-        subprocess.run(
-            ["reg", "add", key, "/v", name, "/t", "REG_SZ", "/d", value, "/f"],
-            capture_output=True,
-        )
+    for entry in gamer_reg["keys"]:
+        full_path = fr"HKU\GamerTemplate\{entry['path']}"
+        for v in entry["values"]:
+            subprocess.run(
+                ["reg", "add", full_path, "/v", v["name"], "/t", v["type"], "/d", v["data"], "/f"],
+                capture_output=True,
+            )
 
     run_cmd(
         r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" '
         r'/v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f'
     )
-    run_cmd('reg unload "HKU\\DefaultTemplate"')
+    run_cmd('reg unload "HKU\\GamerTemplate"')
 
     # ===========================================================
     # [15/15] Finalize Permissions & Firewall

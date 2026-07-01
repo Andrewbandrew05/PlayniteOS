@@ -1,0 +1,65 @@
+{
+  "description": "HKCU registry keys baked into the GamerUser profile template. The installer reads this file and applies every entry to C:\\Users\\GamerUser\\NTUSER.DAT. Edit here during testing — no need to touch installer.py or CreateGamerWindowsUser.ps1.",
+  "keys": [
+    {
+      "comment": "Replace the Windows shell with the BootOS launcher script",
+      "path": "Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon",
+      "values": [
+        {
+          "name": "Shell",
+          "type": "REG_EXPAND_SZ",
+          "data": "wscript.exe %USERPROFILE%\\Playnite\\BootOS.vbs"
+        }
+      ]
+    },
+    {
+      "comment": "Steam is installed per-user inside Playnite\\Launchers\\Steam",
+      "path": "Software\\Valve\\Steam",
+      "values": [
+        {
+          "name": "SteamPath",
+          "type": "REG_SZ",
+          "data": "%USERPROFILE%\\Playnite\\Launchers\\Steam"
+        },
+        {
+          "name": "SteamExe",
+          "type": "REG_SZ",
+          "data": "%USERPROFILE%\\Playnite\\Launchers\\Steam\\steam.exe"
+        }
+      ]
+    },
+    {
+      "comment": "Ubisoft Connect - point game installs to the shared silo",
+      "path": "Software\\Ubisoft\\Launcher",
+      "values": [
+        {
+          "name": "InstallDir",
+          "type": "REG_SZ",
+          "data": "C:\\Games\\Ubisoft\\"
+        }
+      ]
+    },
+    {
+      "comment": "Amazon Games - point game installs to the shared silo",
+      "path": "Software\\Amazon\\Amazon Games App",
+      "values": [
+        {
+          "name": "GameInstallLocation",
+          "type": "REG_SZ",
+          "data": "C:\\Games\\Amazon"
+        }
+      ]
+    },
+    {
+      "comment": "Xbox Gaming App - point game content to the shared silo",
+      "path": "Software\\Microsoft\\GamingApp",
+      "values": [
+        {
+          "name": "GameContentPath",
+          "type": "REG_SZ",
+          "data": "C:\\Games\\Xbox"
+        }
+      ]
+    }
+  ]
+}
