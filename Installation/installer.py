@@ -18,6 +18,7 @@ REPO_ZIP_URL    = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/he
 PLAYNITE_URL    = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL       = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe"
+BATTLENET_URL   = "https://www.battle.net/download/getInstallerForApp?os=win&locale=enUS&version=LIVE&app=battle.net"
 WINSW_URL       = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
@@ -30,7 +31,10 @@ XBOX_GUID     = "7e4fbb5e-2ae3-48d4-8ba0-6b30e7a4e287"
 UBISOFT_GUID  = "c2f038e5-8b92-4877-91f1-da9094155fc5"
 EA_GUID       = "85dd7072-2f20-4e76-a007-41035e390724"
 BATTLENET_GUID = "e3c26a3d-d695-4cb7-a769-5ff7612c7edd"
-AMAZON_GUID   = "44cf0b92-6200-4a0c-86e5-4f1f6f0d0a9e"  # community plugin
+AMAZON_GUID   = "402674cd-4af6-4886-b6ec-0e695bfa0688"  # first-party Playnite extension
+
+# Amazon Games Library plugin (first-party, not bundled in the Playnite zip)
+AMAZON_PLUGIN_URL = "https://github.com/JosefNemec/PlayniteExtensions/releases/download/2.2/AmazonLibrary_Builtin_2_11.pext"
 
 
 def run_cmd(cmd):
@@ -104,6 +108,19 @@ def main():
     open(os.path.join(GAMER_PLAYNITE, "playnite.portable"), "a").close()
     os.remove(pn_zip)
 
+    # Download and pre-install the Amazon Games Library plugin.
+    # It is a first-party Playnite extension that ships separately from the main zip.
+    # A .pext file is a standard zip archive; Playnite uses the addon ID string as
+    # the directory name under Extensions\ (not the class GUID).
+    print("  Installing Amazon Games Library plugin...")
+    amazon_pext = fr"{TEMP_DIR}\amazon_plugin.pext"
+    download(AMAZON_PLUGIN_URL, amazon_pext)
+    amazon_ext_dir = os.path.join(GAMER_PLAYNITE, "Extensions", "AmazonLibrary_Builtin")
+    os.makedirs(amazon_ext_dir, exist_ok=True)
+    with zipfile.ZipFile(amazon_pext, "r") as z:
+        z.extractall(amazon_ext_dir)
+    os.remove(amazon_pext)
+
     # ===========================================================
     # [3/15] Install Steam (Per-User Template + steamapps Junction)
     # ===========================================================
@@ -165,10 +182,13 @@ def main():
     # [8/15] Install Battle.net (Global)
     # ===========================================================
     print("\n[8/15] Installing Battle.net...")
-    run_cmd(
-        "winget install -e --id Blizzard.BattleNet --silent "
-        "--accept-source-agreements --accept-package-agreements"
-    )
+    # winget loses control of the Battle.net bootstrapper subprocess, causing an
+    # indefinite hang in automation contexts.  Download directly and invoke with
+    # --lang=enUS (skips the language-select dialog) and --no-launch-when-done
+    # (prevents Battle.net from auto-opening after install).
+    bnet_setup = fr"{TEMP_DIR}\\battlenet_setup.exe"
+    download(BATTLENET_URL, bnet_setup)
+    run_cmd(fr'"{bnet_setup}" --lang=enUS --no-launch-when-done')
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
@@ -241,6 +261,19 @@ def main():
             "ImportUninstalledGames": True,
         })
 
+    # Write Playnite's main config.json into the GamerUser template.
+    # - FirstTimeWizardComplete: skips the first-run account-connection wizard.
+    # - StartInFullscreen: always boot straight into Fullscreen mode.
+    # DisabledPlugins is omitted (empty = all plugins active).
+    playnite_config = {
+        "FirstTimeWizardComplete": True,
+        "StartInFullscreen": True,
+    }
+    config_path = os.path.join(GAMER_PLAYNITE, "config.json")
+    with open(config_path, "w") as f:
+        json.dump(playnite_config, f, indent=2)
+    print("  Playnite config.json written.")
+
     # ===========================================================
     # [12/15] Configure Shared Game Library Paths
     # ===========================================================
@@ -277,6 +310,8 @@ def main():
     )
 
     # --- Battle.net: seed default game directory (ProgramData) ---
+    # Battle.net will merge its own keys into this file on first launch,
+    # so writing just game_dir here is safe — it won't overwrite or crash.
     os.makedirs(r"C:\ProgramData\Battle.net\Agent", exist_ok=True)
     with open(r"C:\ProgramData\Battle.net\Agent\agent.db", "w") as f:
         json.dump({"game_dir": r"C:\Games\BattleNet"}, f, indent=2)
