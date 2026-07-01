@@ -18,7 +18,6 @@ REPO_ZIP_URL    = "https://github.com/Andrewbandrew05/PlayniteOS/archive/refs/he
 PLAYNITE_URL    = "https://github.com/JosefNemec/Playnite/releases/download/10.31/Playnite1031.zip"
 STEAM_URL       = "https://cdn.akamai.steamstatic.com/client/installer/SteamSetup.exe"
 EPIC_URL        = "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi"
-GOG_URL         = "https://webinstallers.gog-statics.com/download/GOG_Galaxy_2.0.exe"
 UBISOFT_URL     = "https://static3.cdn.ubi.com/orbit/launcher_installer/UbisoftConnectInstaller.exe"
 EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/installer-releases/EAappInstaller.exe"
 BATTLENET_URL   = "https://downloader.battle.net/download/getInstaller?os=win&installer=Battle.net-Setup.exe"
@@ -127,9 +126,10 @@ def main():
     # [5/15] Install GOG Galaxy (Global)
     # ===========================================================
     print("\n[5/15] Installing GOG Galaxy...")
-    gog_setup = fr"{TEMP_DIR}\gog_setup.exe"
-    download(GOG_URL, gog_setup)
-    run_cmd(fr'"{gog_setup}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-')
+    run_cmd(
+        "winget install -e --id GOG.Galaxy --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
 
     # ===========================================================
     # [6/15] Install Ubisoft Connect (Global)
