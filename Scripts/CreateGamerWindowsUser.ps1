@@ -77,8 +77,8 @@ try {
         throw "Failed to create local user '$UserName' via net user."
     }
     
-    # Add to Users group (usually redundant for local users, but ensures it matches your logic)
-    & net localgroup "Users" $UserName /add
+    # Redundant for standard local user creation; commented out to prevent error 1378
+    # & net localgroup "Users" $UserName /add
     
     # Fetch the SID cleanly
     $SID = (Get-WmiObject Win32_UserAccount -Filter "Name='$UserName' and LocalAccount='True'").SID
