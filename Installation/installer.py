@@ -82,7 +82,17 @@ def main():
     os.makedirs(GAMER_USER_ROOT, exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
 
-    # On a fresh Windows image, winget's package sources may be stale or
+    # Snapshot the original Default profile to DefaultUser as a permanent backup.
+    # CreateStandardWindowsUser.ps1 uses this to restore Default after a gamer
+    # user creation, ensuring every new user gets a clean starting profile.
+    # Registry hive files are excluded — only the surrounding files are copied.
+    print("Snapshotting Default profile to DefaultUser...")
+    os.makedirs(r"C:\Users\DefaultUser", exist_ok=True)
+    run_cmd(
+        r'robocopy "C:\Users\Default" "C:\Users\DefaultUser" /E /COPY:DAT /XJ '
+        r'/XF NTUSER.DAT NTUSER.MAN ntuser.ini "NTUSER.DAT.LOG1" "NTUSER.DAT.LOG2" '
+        r'/NFL /NDL /NJH /NJS'
+    )
     # unconfigured.  Update them now so all subsequent installs resolve correctly.
     print("Updating winget sources...")
     run_cmd(
@@ -428,12 +438,11 @@ def main():
 :: BootOS - PlayniteOS Universal Launcher Shell
 :: ---------------------------------------------------------------
 
-:: 1. Start Windows Explorer as a hidden shell backdrop.
-::    Required for launcher COM objects and WebView2-based UIs.
-::    Playnite Fullscreen will cover the entire screen on top.
-start "" explorer.exe
+:: Explorer.exe is already running as the default shell.
+:: BootOS.vbs is placed in the user's Startup folder by the installer,
+:: so this script runs automatically at every login.
 
-:: 2. Prime per-user registry keys (refreshed every login so launcher
+:: 1. Prime per-user registry keys (refreshed every login so launcher
 ::    updates that reset paths do not break the shared library setup).
 
 :: Steam (per-user install in Playnite\Launchers\Steam)
@@ -449,11 +458,11 @@ reg add "HKCU\Software\Amazon\Amazon Games App"    /v "GameInstallLocation" /t R
 :: Xbox Gaming App - shared content root
 reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t REG_SZ /d "C:\Games\Xbox"     /f >nul
 
-:: 3. Launch Playnite Fullscreen - covers the entire screen.
+:: 2. Launch Playnite Fullscreen - covers the entire screen.
 ::    All launcher interactions happen through Playnite; users never see the desktop.
 "%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
 
-:: 4. Logoff when Playnite exits (user switch / power-off flows)
+:: 3. Logoff when Playnite exits (user switch / power-off flows)
 :: logoff
 """
     with open(os.path.join(GAMER_PLAYNITE, "BootOS.cmd"), "w") as f:
@@ -468,28 +477,23 @@ reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t RE
     with open(os.path.join(GAMER_PLAYNITE, "BootOS.vbs"), "w") as f:
         f.write(vbs_content)
 
-    # --- Bake GamerUser registry template from GamerUserRegistry.json ---
-    # The GamerUser hive is initialised from the clean Windows Default hive,
-    # then every key defined in GamerUserRegistry.json is applied on top.
-    # Edit GamerUserRegistry.json to adjust what new gamer accounts inherit
-    # without touching this script.
-    print("Baking GamerUser registry template from GamerUserRegistry.json...")
-    shutil.copy2(r"C:\Users\Default\NTUSER.DAT", r"C:\Users\GamerUser\NTUSER.DAT")
-    run_cmd('reg load "HKU\\GamerTemplate" "C:\\Users\\GamerUser\\NTUSER.DAT"')
-
-    for entry in gamer_reg["keys"]:
-        full_path = fr"HKU\GamerTemplate\{entry['path']}"
-        for v in entry["values"]:
-            subprocess.run(
-                ["reg", "add", full_path, "/v", v["name"], "/t", v["type"], "/d", v["data"], "/f"],
-                capture_output=True,
-            )
+    # Place BootOS.vbs in GamerUser's Startup folder so it runs at every login.
+    # When Windows copies Default -> new user profile on first login, this file
+    # is included, making Playnite launch automatically without touching NTUSER.DAT.
+    startup_dir = os.path.join(
+        GAMER_PLAYNITE,
+        r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"
+    )
+    os.makedirs(startup_dir, exist_ok=True)
+    shutil.copy2(
+        os.path.join(GAMER_PLAYNITE, "BootOS.vbs"),
+        os.path.join(startup_dir, "BootOS.vbs")
+    )
 
     run_cmd(
         r'reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" '
         r'/v "EnumerateLocalUsersOnDomainJoinedComputers" /t REG_DWORD /d 1 /f'
     )
-    run_cmd('reg unload "HKU\\GamerTemplate"')
 
     # ===========================================================
     # [15/15] Finalize Permissions & Firewall
