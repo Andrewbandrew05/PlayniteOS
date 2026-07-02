@@ -128,17 +128,37 @@ try {
     New-ItemProperty -Path $ProfileListPath -Name "ProfileLoadTimeLow"  -Value 0 -PropertyType DWord -Force | Out-Null
     New-ItemProperty -Path $ProfileListPath -Name "ProfileLoadTimeHigh" -Value 0 -PropertyType DWord -Force | Out-Null
 
-    # ------------------------------------------------------------------
+   # ------------------------------------------------------------------
     # 6. Grant the new user full ownership / control of their profile
     # ------------------------------------------------------------------
-    Write-Output "Setting ownership and ACLs ..."
+    Write-Output "Setting ownership and ACLs recursively..."
+    
+    # 6a. Fix the root folder permissions
     $Acl  = Get-Acl $UserProfile
+    $UserNTAccount = [System.Security.Principal.NTAccount]$UserName
     $Rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
         $UserName, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
     )
-    $Acl.SetOwner([System.Security.Principal.NTAccount]$UserName)
+    $Acl.SetOwner($UserNTAccount)
     $Acl.AddAccessRule($Rule)
     Set-Acl -Path $UserProfile -AclObject $Acl
+
+    # 6b. RECURSIVELY take ownership and grant permissions on everything inside
+    # This fixes NTUSER.DAT and subfolders copied by Robocopy /COPYALL
+    Get-ChildItem $UserProfile -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            # Skip reparse points (symlinks/junctions) to prevent breaking Windows links
+            if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) { return }
+            
+            $ItemAcl = Get-Acl $_.FullName
+            $ItemAcl.SetOwner($UserNTAccount)
+            $ItemAcl.SetAccessRuleProtection($false, $true) # Inherit from root folder
+            Set-Acl -Path $_.FullName -AclObject $ItemAcl
+        } catch {
+            # Catch block to prevent minor ACL failures on locked files from breaking the script
+            Write-Warning "Could not update ACL for: $($_.FullName)"
+        }
+    }
 
     # ------------------------------------------------------------------
     # 7. Revert Default profile back to the original Windows default
