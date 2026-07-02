@@ -192,11 +192,15 @@ def main():
     # [8/15] Battle.net (already running in background from step 1)
     # ===========================================================
     print("\n[8/17] Installing Battle.net...")
-    run_cmd(
-        'winget install -e --id Blizzard.BattleNet '
-        '--override "--quiet --lang=enUS --installpath=C:\\BattleNet --no-launch-when-done" '
-        '--accept-source-agreements --accept-package-agreements'
-    )
+    print("\n[8/17] Downloading and launching Battle.net installer...")
+    bnet_setup = fr"{TEMP_DIR}\Battle.net-Setup.exe"
+    bnet_url = "https://www.battle.net/download/getInstallerForGame?os=win&gameProgram=BATTLENET_APP&version=Live"
+    
+    download(bnet_url, bnet_setup)
+    
+    # Launch asynchronously using Popen so it doesn't block the Python script.
+    # Passing the arguments automates the path selection, even though a GUI progress bar will appear.
+    subprocess.Popen(fr'"{bnet_setup}" --lang=enUS --installpath=C:\BattleNet')
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
