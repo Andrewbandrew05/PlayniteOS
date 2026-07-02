@@ -50,14 +50,6 @@ def download(url, dest):
         shutil.copyfileobj(response, out_file)
 
 
-def seed_playnite_config(playnite_base, plugin_guid, config_dict):
-    """Write a Playnite library plugin config into the Default User template."""
-    conf_path = os.path.join(playnite_base, "ExtensionsData", plugin_guid, "config.json")
-    os.makedirs(os.path.dirname(conf_path), exist_ok=True)
-    with open(conf_path, "w") as f:
-        json.dump(config_dict, f, indent=2)
-
-
 def main():
     print("==========================================")
     print("  PlayniteOS Mark 2.0: Universal Launcher ")
@@ -70,10 +62,10 @@ def main():
     # ===========================================================
     # [1/15] Create Global Game Silos
     # ===========================================================
-    print("\n[1/15] Creating Global Game Silos...")
+    print("\n[1/17] Creating Global Game Silos...")
     for silo in [
         r"Steam\steamapps", "Epic", "GOG", "Xbox",
-        "Ubisoft", "EA", "BattleNet", "Amazon",
+        "Ubisoft", "EA", "BattleNet", "Amazon", "itchio", "Humble",
     ]:
         os.makedirs(fr"C:\Games\{silo}", exist_ok=True)
     os.makedirs(r"C:\PlayniteOS\Core\Python", exist_ok=True)
@@ -130,7 +122,7 @@ def main():
     # ===========================================================
     # [2/15] Build Playnite Master Seed in GamerUser Template
     # ===========================================================
-    print("\n[2/15] Building Playnite Master Seed in GamerUser Template...")
+    print("\n[2/17] Building Playnite Master Seed in GamerUser Template...")
     os.makedirs(GAMER_PLAYNITE, exist_ok=True)
     pn_zip = fr"{TEMP_DIR}\playnite.zip"
     download(PLAYNITE_URL, pn_zip)
@@ -155,7 +147,7 @@ def main():
     # ===========================================================
     # [3/15] Install Steam (Per-User Template + steamapps Junction)
     # ===========================================================
-    print("\n[3/15] Installing Steam into GamerUser Template...")
+    print("\n[3/17] Installing Steam into GamerUser Template...")
     steam_path  = os.path.join(GAMER_PLAYNITE, "Launchers", "Steam")
     steam_setup = fr"{TEMP_DIR}\steam_setup.exe"
     download(STEAM_URL, steam_setup)
@@ -175,7 +167,7 @@ def main():
     # ===========================================================
     # [4/15] Install Epic Games Launcher (Global)
     # ===========================================================
-    print("\n[4/15] Installing Epic Games Launcher...")
+    print("\n[4/17] Installing Epic Games Launcher...")
     run_cmd(
         "winget install -e --id EpicGames.EpicGamesLauncher --silent "
         "--accept-source-agreements --accept-package-agreements"
@@ -184,7 +176,7 @@ def main():
     # ===========================================================
     # [5/15] Install GOG Galaxy (Global)
     # ===========================================================
-    print("\n[5/15] Installing GOG Galaxy...")
+    print("\n[5/17] Installing GOG Galaxy...")
     run_cmd(
         "winget install -e --id GOG.Galaxy --silent "
         "--accept-source-agreements --accept-package-agreements"
@@ -193,7 +185,7 @@ def main():
     # ===========================================================
     # [6/15] Install Ubisoft Connect (Global)
     # ===========================================================
-    print("\n[6/15] Installing Ubisoft Connect...")
+    print("\n[6/17] Installing Ubisoft Connect...")
     run_cmd(
         "winget install -e --id Ubisoft.Connect --silent "
         "--accept-source-agreements --accept-package-agreements"
@@ -202,7 +194,7 @@ def main():
     # ===========================================================
     # [7/15] Install EA App (Global)
     # ===========================================================
-    print("\n[7/15] Installing EA App...")
+    print("\n[7/17] Installing EA App...")
     # winget does not suppress EA's bootstrapper UI reliably.
     # Download directly from EA's CDN and pass WiX bootstrapper silent flags.
     ea_setup = fr"{TEMP_DIR}\ea_setup.exe"
@@ -212,12 +204,12 @@ def main():
     # ===========================================================
     # [8/15] Battle.net (already running in background from step 1)
     # ===========================================================
-    print("\n[8/15] Battle.net installing in background, continuing...")
+    print("\n[8/17] Battle.net installing in background, continuing...")
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
     # ===========================================================
-    print("\n[9/15] Installing Amazon Games...")
+    print("\n[9/17] Installing Amazon Games...")
     run_cmd(
         "winget install -e --id Amazon.Games --silent "
         "--accept-source-agreements --accept-package-agreements"
@@ -226,7 +218,7 @@ def main():
     # ===========================================================
     # [10/15] Install Xbox Gaming Services (Global, via winget)
     # ===========================================================
-    print("\n[10/15] Installing Xbox Gaming Services...")
+    print("\n[10/17] Installing Xbox Gaming Services...")
     run_cmd(
         "winget install --id Microsoft.GamingApp --silent "
         "--accept-source-agreements --accept-package-agreements"
@@ -237,9 +229,27 @@ def main():
     )
 
     # ===========================================================
-    # [11/15] Pull GitHub Assets & Seed Playnite Plugin Configs
+    # [11/17] Install itch.io
     # ===========================================================
-    print("\n[11/15] Pulling GitHub Assets & Seeding Configs...")
+    print("\n[11/17] Installing itch.io...")
+    run_cmd(
+        "winget install -e --id itch.io.itch --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
+
+    # ===========================================================
+    # [12/17] Install Humble Game Manager
+    # ===========================================================
+    print("\n[12/17] Installing Humble Game Manager...")
+    run_cmd(
+        "winget install -e --id HumbleBundle.HumbleGames --silent "
+        "--accept-source-agreements --accept-package-agreements"
+    )
+
+    # ===========================================================
+    # [13/17] Pull GitHub Assets & Seed Playnite Plugin Configs
+    # ===========================================================
+    print("\n[13/17] Pulling GitHub Assets & Seeding Configs...")
     repo_tmp = fr"{TEMP_DIR}\repo"
     req = urllib.request.Request(REPO_ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req) as response:
@@ -251,57 +261,24 @@ def main():
     shutil.copytree(os.path.join(repo_root, "Core"),    r"C:\PlayniteOS\Core",    dirs_exist_ok=True)
     shutil.copytree(os.path.join(repo_root, "Configs"), r"C:\PlayniteOS\Configs", dirs_exist_ok=True)
 
-    # Load the GamerUser registry config now so it's ready for the lockdown step.
-    with open(r"C:\PlayniteOS\Configs\GamerUserRegistry.json") as f:
-        gamer_reg = json.load(f)
-
     shutil.rmtree(repo_tmp)
 
-    # Steam: per-user install, relative path from Playnite root.
-    # Login tokens & cloud saves live in each user's %USERPROFILE%\Playnite\Launchers\Steam\userdata\
-    seed_playnite_config(GAMER_PLAYNITE, STEAM_GUID, {
-        "UseCustomSteamInstallationPath": True,
-        "CustomSteamInstallationPath": "..\\..\\Launchers\\Steam",
-        "ImportInstalledGames": True,
-        "ImportUninstalledGames": True,
-        "StartSteamClickAction": 1,
-        "SteamQuietLaunch": True,
-    })
-
-    # Epic: global install; per-user login stored in %LOCALAPPDATA%\EpicGamesLauncher\
-    seed_playnite_config(GAMER_PLAYNITE, EPIC_GUID, {
-        "UseCustomLauncherPath": True,
-        "CustomLauncherPath": r"C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe",
-        "LauncherArguments": "-SkipBuildPatchPrereq",
-        "ImportInstalledGames": True,
-        "ImportUninstalledGames": True,
-    })
-
-    # Remaining launchers are global installs auto-detected via registry.
-    # Per-user login data lives in each user's %LOCALAPPDATA% / %APPDATA%.
-    for guid in [GOG_GUID, UBISOFT_GUID, EA_GUID, BATTLENET_GUID, XBOX_GUID, AMAZON_GUID]:
-        seed_playnite_config(GAMER_PLAYNITE, guid, {
-            "ImportInstalledGames": True,
-            "ImportUninstalledGames": True,
-        })
-
-    # Write Playnite's main config.json into the GamerUser template.
-    # - FirstTimeWizardComplete: skips the first-run account-connection wizard.
-    # - StartInFullscreen: always boot straight into Fullscreen mode.
-    # DisabledPlugins is omitted (empty = all plugins active).
-    playnite_config = {
-        "FirstTimeWizardComplete": True,
-        "StartInFullscreen": True,
-    }
-    config_path = os.path.join(GAMER_PLAYNITE, "config.json")
-    with open(config_path, "w") as f:
-        json.dump(playnite_config, f, indent=2)
-    print("  Playnite config.json written.")
+    # Copy Playnite configs from the repo into the GamerUser template.
+    # Populate Configs/Playnite/ in the repo by copying from a working Playnite
+    # install — at minimum config.json and the ExtensionsData\ folder.
+    # The directory structure mirrors the Playnite root so everything lands
+    # in the right place without any path manipulation.
+    playnite_configs_src = r"C:\PlayniteOS\Configs\Playnite"
+    if os.path.isdir(playnite_configs_src):
+        shutil.copytree(playnite_configs_src, GAMER_PLAYNITE, dirs_exist_ok=True)
+        print("  Playnite configs applied from Configs/Playnite/.")
+    else:
+        print("  WARNING: Configs/Playnite/ not found — skipping Playnite config seeding.")
 
     # ===========================================================
     # [12/15] Configure Shared Game Library Paths
     # ===========================================================
-    print("\n[12/15] Configuring shared game library paths...")
+    print("\n[14/17] Configuring shared game library paths...")
 
     # Wait for any still-running installer processes to finish, then kill
     # every launcher that may have auto-launched after installation so their
@@ -388,7 +365,7 @@ def main():
     # ===========================================================
     # [13/15] Setup Python Core & WinSW Service
     # ===========================================================
-    print("\n[13/15] Setting up Python Core & Service...")
+    print("\n[15/17] Setting up Python Core & Service...")
     py_tmp = fr"{TEMP_DIR}\py_core.zip"
     download(PYTHON_EMBED_URL, py_tmp)
     with zipfile.ZipFile(py_tmp, "r") as z:
@@ -421,7 +398,7 @@ def main():
     # ===========================================================
     # [14/15] Create BootOS Shell Scripts & Registry Lockdown
     # ===========================================================
-    print("\n[14/15] Creating BootOS Shell Scripts...")
+    print("\n[16/17] Creating BootOS Shell Scripts...")
 
     # BootOS.cmd - the per-user shell that runs on every login.
     #
@@ -498,7 +475,7 @@ reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t RE
     # ===========================================================
     # [15/15] Finalize Permissions & Firewall
     # ===========================================================
-    print("\n[15/15] Finalizing Permissions...")
+    print("\n[17/17] Finalizing Permissions...")
     # Users get full control over all shared game silos so launchers can install/patch
     run_cmd(r'icacls "C:\Games"     /grant "Users:(OI)(CI)F"  /T /C /Q')
     # Users can read/execute the PlayniteOS core but cannot tamper with it
