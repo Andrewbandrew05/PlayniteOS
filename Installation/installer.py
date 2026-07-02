@@ -153,9 +153,9 @@ def main():
     run_cmd("winget install -e --id ItchIo.Itch --silent --accept-source-agreements --accept-package-agreements")
 
     # ===========================================================
-    # [12/17] Pull GitHub Assets & Seed Configs
+    # [12/17] Pull GitHub Assets (Scripts & Core)
     # ===========================================================
-    print("\n[12/17] Pulling GitHub Assets & Seeding Configs...")
+    print("\n[12/17] Pulling GitHub Assets...")
     repo_tmp = fr"{TEMP_DIR}\repo"
     req = urllib.request.Request(REPO_ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req) as response:
@@ -163,8 +163,19 @@ def main():
             z.extractall(repo_tmp)
 
     repo_root = os.path.join(repo_tmp, "PlayniteOS-main")
-    for folder in ["Scripts", "Core", "Configs"]:
-        shutil.copytree(os.path.join(repo_root, folder), fr"C:\PlayniteOS\{folder}", dirs_exist_ok=True)
+    
+    # Removed "Configs" from this list so it doesn't try to download them
+    for folder in ["Scripts", "Core"]:
+        src_path = os.path.join(repo_root, folder)
+        dest_path = fr"C:\PlayniteOS\{folder}"
+        
+        # Added a check: only copy if the folder actually exists in your GitHub zip
+        if os.path.exists(src_path):
+            shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
+        else:
+            print(f"  Warning: Folder '{folder}' not found in repository, skipping.")
+
+    shutil.rmtree(repo_tmp)
 
     # ===========================================================
     # [13/17] Configure Shared Game Library Paths
