@@ -481,7 +481,7 @@ reg add "HKCU\Software\Microsoft\GamingApp"        /v "GameContentPath"    /t RE
     # When Windows copies Default -> new user profile on first login, this file
     # is included, making Playnite launch automatically without touching NTUSER.DAT.
     startup_dir = os.path.join(
-        GAMER_PLAYNITE,
+        GAMER_USER_ROOT,
         r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"
     )
     os.makedirs(startup_dir, exist_ok=True)
