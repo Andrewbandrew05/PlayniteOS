@@ -30,6 +30,33 @@ $GamerTemplate  = "C:\Users\GamerUser"
 $DefaultProfile = "C:\Users\Default"
 $BackupDir      = "C:\PlayniteOS\DefaultProfileBackup"
 
+# Removes a directory tree safely, handling Windows junction points (Application Data,
+# Local Settings, etc.) by removing only the link rather than recursing into the target.
+function Remove-Tree {
+    param([string]$Path)
+    if (!(Test-Path $Path -ErrorAction SilentlyContinue)) { return }
+    Get-ChildItem $Path -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            # Junction/symlink — delete the link entry only, never recurse into it
+            & cmd /c rmdir "$($_.FullName)" 2>$null
+        } elseif ($_.PSIsContainer) {
+            Remove-Tree $_.FullName
+        } else {
+            Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+        }
+    }
+    & cmd /c rmdir "$Path" 2>$null
+    Remove-Item $Path -Force -ErrorAction SilentlyContinue
+}
+
+# Clears the children of a directory (leaving the directory itself) the same way.
+function Clear-Tree {
+    param([string]$Path, [string[]]$Exclude = @())
+    Get-ChildItem $Path -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notin $Exclude } |
+        ForEach-Object { Remove-Tree $_.FullName }
+}
+
 try {
     # ------------------------------------------------------------------
     # Guard: GamerUser template must exist
@@ -54,7 +81,7 @@ try {
     # 2. Back up the current Default profile
     # ------------------------------------------------------------------
     Write-Output "Backing up Default profile to $BackupDir ..."
-    if (Test-Path $BackupDir) { & cmd /c rmdir /S /Q "$BackupDir" }
+    Remove-Tree $BackupDir
     New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
     robocopy $DefaultProfile $BackupDir /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
 
@@ -107,11 +134,9 @@ try {
     # 7. Revert Default profile back to the original Windows default
     # ------------------------------------------------------------------
     Write-Output "Reverting Default profile ..."
-    Get-ChildItem $DefaultProfile -Force |
-        Where-Object { $_.Name -notin @("desktop.ini") } |
-        ForEach-Object { & cmd /c rmdir /S /Q $_.FullName 2>$null; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
+    Clear-Tree $DefaultProfile -Exclude @("desktop.ini")
     robocopy $BackupDir $DefaultProfile /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
-    & cmd /c rmdir /S /Q "$BackupDir"
+    Remove-Tree $BackupDir
 
     # ------------------------------------------------------------------
     # 8. Make the user visible on the PlayniteOS login screen
@@ -130,11 +155,9 @@ catch {
     # Attempt automatic restore of Default if the backup was already taken
     if (Test-Path $BackupDir) {
         Write-Output "Attempting to restore Default profile from backup ..."
-        Get-ChildItem $DefaultProfile -Force |
-            Where-Object { $_.Name -notin @("desktop.ini") } |
-            ForEach-Object { & cmd /c rmdir /S /Q $_.FullName 2>$null; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
+        Clear-Tree $DefaultProfile -Exclude @("desktop.ini")
         robocopy $BackupDir $DefaultProfile /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
-        & cmd /c rmdir /S /Q "$BackupDir" 2>$null
+        Remove-Tree $BackupDir
         Write-Output "Default profile restored."
     }
 
