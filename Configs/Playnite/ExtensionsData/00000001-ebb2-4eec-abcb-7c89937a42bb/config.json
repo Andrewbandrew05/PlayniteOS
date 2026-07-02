@@ -2,7 +2,7 @@
   "Version": 1,
   "ImportInstalledGames": true,
   "ConnectAccount": false,
-  "ImportUninstalledGames": false,
+  "ImportUninstalledGames": true,
   "ImportFreeGamesFromCollections": false,
   "ImportGameClassification": {
     "game": true,

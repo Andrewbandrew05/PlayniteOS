@@ -2,7 +2,7 @@
   "Version": 1,
   "ImportInstalledGames": true,
   "ConnectAccount": false,
-  "ImportUninstalledGames": false,
+  "ImportUninstalledGames": true,
   "StartGamesUsingGalaxy": false,
   "UseAutomaticGameInstalls": false,
   "UseVerticalCovers": true,

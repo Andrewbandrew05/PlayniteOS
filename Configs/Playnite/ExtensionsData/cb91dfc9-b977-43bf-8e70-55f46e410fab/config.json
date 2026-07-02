@@ -3,7 +3,7 @@
   "ImportInstalledGames": true,
   "ImportFamilySharedGames": true,
   "ConnectAccount": false,
-  "ImportUninstalledGames": false,
+  "ImportUninstalledGames": true,
   "UserId": "",
   "IncludeFreeSubGames": false,
   "ShowFriendsButton": true,
