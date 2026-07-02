@@ -82,13 +82,22 @@ def main():
     os.makedirs(GAMER_USER_ROOT, exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
 
-    # Kick off Battle.net immediately so it installs in the background
-    # while the rest of the steps run.  It doesn't fully respect --silent
-    # but will complete on its own before the final reboot.
+    # On a fresh Windows image, winget's package sources may be stale or
+    # unconfigured.  Update them now so all subsequent installs resolve correctly.
+    print("Updating winget sources...")
+    run_cmd(
+        "winget source update --disable-interactivity "
+        "--accept-source-agreements"
+    )
+
+    # Kick off Battle.net immediately so it installs in the background.
+    # Pass --override with the install path so it doesn't prompt for a location
+    # on a fresh system.
     print("Launching Battle.net installer in background...")
     subprocess.Popen(
-        "winget install -e --id Blizzard.BattleNet --silent "
-        "--accept-source-agreements --accept-package-agreements",
+        'winget install -e --id Blizzard.BattleNet --silent '
+        '--override "--lang=enUS --installpath=C:\\\\Program Files (x86)\\\\Battle.net" '
+        '--accept-source-agreements --accept-package-agreements',
         shell=True
     )
 
