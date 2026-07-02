@@ -1,9 +1,0 @@
-{
-  "ConnectAccount": false,
-  "IgnoreThirdPartyStoreGames": true,
-  "ImportThirdPartyDrmFree": false,
-  "ImportGeneralLibrary": true,
-  "ImportGameExtras": false,
-  "ImportTroveGames": false,
-  "LaunchViaHumbleApp": true
-}
