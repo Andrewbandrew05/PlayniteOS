@@ -68,13 +68,23 @@ try {
     Write-Output "--- Creating PlayniteOS Gamer User: $UserName ---"
 
     # ------------------------------------------------------------------
-    # 1. Create the Windows account
+    # 1. Create the Windows account (SYSTEM-safe native commands)
     # ------------------------------------------------------------------
-    $SecurePassword = ConvertTo-SecureString $Password -AsPlainText -Force
-    New-LocalUser -Name $UserName -Password $SecurePassword `
-        -Description "PlayniteOS Gamer" -ErrorAction Stop
-    Add-LocalGroupMember -Group "Users" -Member $UserName
-    $SID = (Get-LocalUser -Name $UserName).SID.Value
+    # Create the user using net user (bypasses the New-LocalUser SYSTEM hang bug)
+    & net user $UserName $Password /add /comment:"PlayniteOS Gamer" /y
+    
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create local user '$UserName' via net user."
+    }
+    
+    # Add to Users group (usually redundant for local users, but ensures it matches your logic)
+    & net localgroup "Users" $UserName /add
+    
+    # Fetch the SID cleanly
+    $SID = (Get-WmiObject Win32_UserAccount -Filter "Name='$UserName' and LocalAccount='True'").SID
+    if (!$SID) {
+        throw "Could not retrieve SID for created user '$UserName'."
+    }
     Write-Output "Account created. SID: $SID"
 
     # ------------------------------------------------------------------
