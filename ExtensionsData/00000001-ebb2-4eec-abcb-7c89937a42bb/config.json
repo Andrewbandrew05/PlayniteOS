@@ -1,0 +1,18 @@
+{
+  "Version": 1,
+  "ImportInstalledGames": true,
+  "ConnectAccount": false,
+  "ImportUninstalledGames": false,
+  "ImportFreeGamesFromCollections": false,
+  "ImportGameClassification": {
+    "game": true,
+    "tool": true,
+    "assets": false,
+    "game_mod": false,
+    "physical_game": false,
+    "soundtrack": false,
+    "other": false,
+    "comic": false,
+    "book": false
+  }
+}
