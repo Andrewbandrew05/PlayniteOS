@@ -92,19 +92,6 @@ def main():
         "--accept-source-agreements"
     )
 
-    # Kick off Battle.net immediately so it installs in the background.
-    # --override replaces winget's own silent args entirely, so include
-    # everything needed:  --lang skips the language dialog, --installpath
-    # pre-fills the location prompt (no spaces to avoid cmd quoting issues),
-    # --no-launch-when-done prevents Battle.net opening after install.
-    print("Launching Battle.net installer in background...")
-    subprocess.Popen(
-        'winget install -e --id Blizzard.BattleNet '
-        '--override "--lang=enUS --installpath=C:\\BattleNet --no-launch-when-done" '
-        '--accept-source-agreements --accept-package-agreements',
-        shell=True
-    )
-
     # Pre-install shared system prerequisites required by multiple launchers.
     # GOG Galaxy 2.0, EA App, and Xbox all need WebView2; GOG Galaxy and others
     # need VC++ 2015-2022.  Installing here ensures they're present before any
@@ -204,7 +191,12 @@ def main():
     # ===========================================================
     # [8/15] Battle.net (already running in background from step 1)
     # ===========================================================
-    print("\n[8/17] Battle.net installing in background, continuing...")
+    print("\n[8/17] Installing Battle.net...")
+    run_cmd(
+        'winget install -e --id Blizzard.BattleNet '
+        '--override "--quiet --lang=enUS --installpath=C:\\BattleNet --no-launch-when-done" '
+        '--accept-source-agreements --accept-package-agreements'
+    )
 
     # ===========================================================
     # [9/15] Install Amazon Games (Global)
@@ -233,7 +225,7 @@ def main():
     # ===========================================================
     print("\n[11/17] Installing itch.io...")
     run_cmd(
-        "winget install -e --id itch.io.itch --silent "
+        "winget install -e --id ItchIo.Itch --silent "
         "--accept-source-agreements --accept-package-agreements"
     )
 
@@ -242,7 +234,7 @@ def main():
     # ===========================================================
     print("\n[12/17] Installing Humble Game Manager...")
     run_cmd(
-        "winget install -e --id HumbleBundle.HumbleGames --silent "
+        "winget install -e --id HumbleBundle.HumbleApp --silent "
         "--accept-source-agreements --accept-package-agreements"
     )
 

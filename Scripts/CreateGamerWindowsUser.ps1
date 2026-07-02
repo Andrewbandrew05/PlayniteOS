@@ -39,7 +39,7 @@ try {
     }
 
     # ------------------------------------------------------------------
-    # 3. Modify the Default Registry Hive (The "Gamer Lockdown")
+    # 3. Modify the Default Registry Hive (The "Phantom Explorer" Lockdown)
     # ------------------------------------------------------------------
     Write-Output "Applying Registry restrictions to Default Hive..."
     
@@ -49,32 +49,36 @@ try {
     try {
         $RegPaths = @(
             "HKU\DefaultTemp\Control Panel\Colors",
-            "HKU\DefaultTemp\Control Panel\Desktop",
+            "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System",
             "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer",
-            "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+            "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
+            "HKU\DefaultTemp\Keyboard Layout"
         )
         foreach ($p in $RegPaths) { if (!(Test-Path $p)) { New-Item $p -Force | Out-Null } }
 
-        # A. Set Background to Plain Black
-        Set-ItemProperty -Path "HKU\DefaultTemp\Control Panel\Colors" -Name "Background" -Value "0 0 0"
-        Set-ItemProperty -Path "HKU\DefaultTemp\Control Panel\Desktop" -Name "WallPaper" -Value ""
+        # A. Force Background to Plain Black (Requires Policy to survive first login)
+        $PolSystem = "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System"
+        Set-ItemProperty -Path $PolSystem -Name "Wallpaper" -Value "" -Type String -Force
+        Set-ItemProperty -Path $PolSystem -Name "WallpaperStyle" -Value "0" -Type String -Force
+        Set-ItemProperty -Path "HKU\DefaultTemp\Control Panel\Colors" -Name "Background" -Value "0 0 0" -Type String -Force
 
-        # B. Hide all Desktop Icons
-        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value 1
+        # B. Hide all Desktop Icons (CRITICAL: Must be DWord)
+        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value 1 -Type DWord -Force
 
-        # C. Disable Taskbar and Start Menu (NoRun, NoSetTaskbar, NoStartMenu)
-        # This effectively "kills" the interaction with the taskbar
-        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "NoSetTaskbar" -Value 1
-        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "NoTrayItemsDisplay" -Value 1
-        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "NoStartMenuMorePrograms" -Value 1
-        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -Name "NoTaskGrouping" -Value 1
+        # C. Disable Taskbar and Start Menu Features (CRITICAL: Must be DWord)
+        $PolExplorer = "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        Set-ItemProperty -Path $PolExplorer -Name "NoSetTaskbar" -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $PolExplorer -Name "NoTrayItemsDisplay" -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $PolExplorer -Name "NoStartMenuMorePrograms" -Value 1 -Type DWord -Force
+        Set-ItemProperty -Path $PolExplorer -Name "NoTaskGrouping" -Value 1 -Type DWord -Force
 
-        # D. OPTIONAL: Replace Shell with Playnite (The "Nuclear" Option)
-        # If you want the Taskbar to NEVER even load, uncomment the lines below.
-        # This replaces Explorer.exe with Playnite for this user.
-        # $WinlogonPath = "HKU\DefaultTemp\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
-        # if (!(Test-Path $WinlogonPath)) { New-Item $WinlogonPath -Force | Out-Null }
-        # Set-ItemProperty -Path $WinlogonPath -Name "Shell" -Value "C:\Users\$UserName\Playnite\Playnite.DesktopApp.exe"
+        # D. Disable the Windows Keys (Left and Right)
+        # Prevents the Start Menu from opening if a controller guide button or Win key is pressed.
+        $ScancodeMap = [byte[]](0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x03,0x00,0x00,0x00, 0x00,0x00,0x5B,0xE0, 0x00,0x00,0x5C,0xE0, 0x00,0x00,0x00,0x00)
+        Set-ItemProperty -Path "HKU\DefaultTemp\Keyboard Layout" -Name "Scancode Map" -Value $ScancodeMap -Type Binary -Force
+
+        # NOTE: We intentionally leave the "Shell" alone so explorer.exe runs.
+        # This allows Epic Games, EA App, and Xbox to initialize their COM objects and System Trays.
     }
     finally {
         # CRITICAL: Always unload the hive or the user creation will fail
