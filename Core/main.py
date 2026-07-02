@@ -80,7 +80,7 @@ async def run_action(
             quoted.append(a if i % 2 == 0 else f'"{a}"')
         ps_cmd = f"& '{script_path}' {' '.join(quoted)} *>&1"
         process = await asyncio.create_subprocess_exec(
-            "powershell.exe", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+            "powershell.exe", "-ExecutionPolicy", "Bypass",
             "-Command", ps_cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
