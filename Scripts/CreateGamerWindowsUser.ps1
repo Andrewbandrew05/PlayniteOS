@@ -42,7 +42,7 @@ function Remove-Tree {
         } elseif ($_.PSIsContainer) {
             Remove-Tree $_.FullName
         } else {
-            Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+            Remove-Item $_.FullName -Force -Recurse -ErrorAction SilentlyContinue
         }
     }
     & cmd /c rmdir "$Path" 2>$null
