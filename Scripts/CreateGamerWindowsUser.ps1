@@ -58,24 +58,24 @@ try {
 
         # A. Force Background to Plain Black (Requires Policy to survive first login)
         $PolSystem = "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System"
-        Set-ItemProperty -Path $PolSystem -Name "Wallpaper" -Value "" -Type String -Force
-        Set-ItemProperty -Path $PolSystem -Name "WallpaperStyle" -Value "0" -Type String -Force
-        Set-ItemProperty -Path "HKU\DefaultTemp\Control Panel\Colors" -Name "Background" -Value "0 0 0" -Type String -Force
+        New-ItemProperty -Path $PolSystem -Name "Wallpaper" -Value "" -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path $PolSystem -Name "WallpaperStyle" -Value "0" -PropertyType String -Force | Out-Null
+        New-ItemProperty -Path "HKU\DefaultTemp\Control Panel\Colors" -Name "Background" -Value "0 0 0" -PropertyType String -Force | Out-Null
 
         # B. Hide all Desktop Icons (CRITICAL: Must be DWord)
-        Set-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value 1 -Type DWord -Force
+        New-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value 1 -PropertyType DWord -Force | Out-Null
 
         # C. Disable Taskbar and Start Menu Features (CRITICAL: Must be DWord)
         $PolExplorer = "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
-        Set-ItemProperty -Path $PolExplorer -Name "NoSetTaskbar" -Value 1 -Type DWord -Force
-        Set-ItemProperty -Path $PolExplorer -Name "NoTrayItemsDisplay" -Value 1 -Type DWord -Force
-        Set-ItemProperty -Path $PolExplorer -Name "NoStartMenuMorePrograms" -Value 1 -Type DWord -Force
-        Set-ItemProperty -Path $PolExplorer -Name "NoTaskGrouping" -Value 1 -Type DWord -Force
+        New-ItemProperty -Path $PolExplorer -Name "NoSetTaskbar" -Value 1 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $PolExplorer -Name "NoTrayItemsDisplay" -Value 1 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $PolExplorer -Name "NoStartMenuMorePrograms" -Value 1 -PropertyType DWord -Force | Out-Null
+        New-ItemProperty -Path $PolExplorer -Name "NoTaskGrouping" -Value 1 -PropertyType DWord -Force | Out-Null
 
         # D. Disable the Windows Keys (Left and Right)
         # Prevents the Start Menu from opening if a controller guide button or Win key is pressed.
         $ScancodeMap = [byte[]](0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x03,0x00,0x00,0x00, 0x00,0x00,0x5B,0xE0, 0x00,0x00,0x5C,0xE0, 0x00,0x00,0x00,0x00)
-        Set-ItemProperty -Path "HKU\DefaultTemp\Keyboard Layout" -Name "Scancode Map" -Value $ScancodeMap -Type Binary -Force
+        New-ItemProperty -Path "HKU\DefaultTemp\Keyboard Layout" -Name "Scancode Map" -Value $ScancodeMap -PropertyType Binary -Force | Out-Null
 
         # NOTE: We intentionally leave the "Shell" alone so explorer.exe runs.
         # This allows Epic Games, EA App, and Xbox to initialize their COM objects and System Trays.

@@ -173,10 +173,13 @@ def main():
     # [6/15] Install Ubisoft Connect (Global)
     # ===========================================================
     print("\n[6/17] Installing Ubisoft Connect...")
-    run_cmd(
-        "winget install -e --id Ubisoft.Connect --silent "
-        "--accept-source-agreements --accept-package-agreements"
-    )
+    ubi_setup = fr"{TEMP_DIR}\UbisoftConnectInstaller.exe"
+    ubi_url = "https://ubistatic3-a.akamaihd.net/orbit/launcher_installer/UbisoftConnectInstaller.exe"
+    
+    download(ubi_url, ubi_setup)
+    
+    # Ubisoft uses an NSIS installer, which accepts /S for a completely silent install
+    run_cmd(fr'"{ubi_setup}" /S')
 
     # ===========================================================
     # [7/15] Install EA App (Global)
@@ -233,6 +236,7 @@ def main():
         "--accept-source-agreements --accept-package-agreements"
     )
 
+    #apparently this game manager may not exist anymore, not sure tho
     # ===========================================================
     # [12/17] Install Humble Game Manager
     # ===========================================================
