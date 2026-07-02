@@ -150,7 +150,7 @@ try {
     Write-Output "--- SUCCESS: $UserName created with GamerUser template. ---"
 }
 catch {
-    Write-Error "Failed: $_"
+    Write-Output "ERROR: $_"
 
     # Attempt automatic restore of Default if the backup was already taken
     if (Test-Path $BackupDir) {

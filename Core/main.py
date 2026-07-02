@@ -72,8 +72,16 @@ async def run_action(
     script_path = script_map[script_name]
 
     async def generate():
+        # Quote parameter values so spaces are handled correctly, then append
+        # *>&1 to merge all PowerShell streams (errors, warnings, verbose) into
+        # stdout so the client sees everything including error messages.
+        quoted = []
+        for i, a in enumerate(args):
+            quoted.append(a if i % 2 == 0 else f'"{a}"')
+        ps_cmd = f"& '{script_path}' {' '.join(quoted)} *>&1"
         process = await asyncio.create_subprocess_exec(
-            "powershell.exe", "-ExecutionPolicy", "Bypass", "-File", script_path, *args,
+            "powershell.exe", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+            "-Command", ps_cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
