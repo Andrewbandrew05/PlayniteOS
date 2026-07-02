@@ -112,7 +112,9 @@ try {
     if (!(Test-Path $UserProfile)) {
         New-Item -ItemType Directory -Path $UserProfile -Force | Out-Null
     }
-    robocopy $GamerTemplate $UserProfile /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
+    # /COPY:DAT copies data/attributes/timestamps but NOT security descriptors —
+    # avoids inheriting GamerUser's ownership on every file before we reset ACLs.
+    robocopy $GamerTemplate $UserProfile /E /COPY:DAT /NFL /NDL /NJH /NJS | Out-Null
 
     # ------------------------------------------------------------------
     # 5. Register the profile in the Windows ProfileList so Windows
@@ -127,6 +129,12 @@ try {
     New-ItemProperty -Path $ProfileListPath -Name "State"               -Value 0 -PropertyType DWord -Force | Out-Null
     New-ItemProperty -Path $ProfileListPath -Name "ProfileLoadTimeLow"  -Value 0 -PropertyType DWord -Force | Out-Null
     New-ItemProperty -Path $ProfileListPath -Name "ProfileLoadTimeHigh" -Value 0 -PropertyType DWord -Force | Out-Null
+    # Binary SID required for Windows to correctly associate the profile with the account.
+    # Without it, Group Policy cannot verify the profile owner and fails at sign-in.
+    $SIDObj    = New-Object System.Security.Principal.SecurityIdentifier($SID)
+    $SIDBinary = New-Object byte[] $SIDObj.BinaryLength
+    $SIDObj.GetBinaryForm($SIDBinary, 0)
+    New-ItemProperty -Path $ProfileListPath -Name "Sid" -Value $SIDBinary -PropertyType Binary -Force | Out-Null
 
    # ------------------------------------------------------------------
     # 6. Grant the new user full ownership / control of their profile
