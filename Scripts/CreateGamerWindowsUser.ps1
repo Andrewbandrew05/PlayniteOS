@@ -54,7 +54,7 @@ try {
     # 2. Back up the current Default profile
     # ------------------------------------------------------------------
     Write-Output "Backing up Default profile to $BackupDir ..."
-    if (Test-Path $BackupDir) { Remove-Item $BackupDir -Recurse -Force }
+    if (Test-Path $BackupDir) { & cmd /c rmdir /S /Q "$BackupDir" }
     New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
     robocopy $DefaultProfile $BackupDir /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
 
@@ -109,9 +109,9 @@ try {
     Write-Output "Reverting Default profile ..."
     Get-ChildItem $DefaultProfile -Force |
         Where-Object { $_.Name -notin @("desktop.ini") } |
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        ForEach-Object { & cmd /c rmdir /S /Q $_.FullName 2>$null; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
     robocopy $BackupDir $DefaultProfile /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
-    Remove-Item $BackupDir -Recurse -Force
+    & cmd /c rmdir /S /Q "$BackupDir"
 
     # ------------------------------------------------------------------
     # 8. Make the user visible on the PlayniteOS login screen
@@ -132,9 +132,9 @@ catch {
         Write-Output "Attempting to restore Default profile from backup ..."
         Get-ChildItem $DefaultProfile -Force |
             Where-Object { $_.Name -notin @("desktop.ini") } |
-            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+            ForEach-Object { & cmd /c rmdir /S /Q $_.FullName 2>$null; Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
         robocopy $BackupDir $DefaultProfile /E /COPYALL /NFL /NDL /NJH /NJS | Out-Null
-        Remove-Item $BackupDir -Recurse -Force -ErrorAction SilentlyContinue
+        & cmd /c rmdir /S /Q "$BackupDir" 2>$null
         Write-Output "Default profile restored."
     }
 
