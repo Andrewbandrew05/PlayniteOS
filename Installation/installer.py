@@ -22,9 +22,6 @@ EA_URL          = "https://origin-a.akamaihd.net/EA-Desktop-Client-Download/inst
 WINSW_URL       = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe"
 PYTHON_EMBED_URL = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 
-# Amazon Games Library plugin
-AMAZON_PLUGIN_URL = "https://github.com/JosefNemec/PlayniteExtensions/releases/download/2.2/AmazonLibrary_Builtin_2_11.pext"
-
 def run_cmd(cmd):
     print(f" > {cmd}")
     return subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -90,13 +87,6 @@ def main():
     with zipfile.ZipFile(pn_zip, "r") as z:
         z.extractall(GAMER_PLAYNITE)
     open(os.path.join(GAMER_PLAYNITE, "playnite.portable"), "a").close()
-    
-    amazon_pext = fr"{TEMP_DIR}\amazon_plugin.pext"
-    download(AMAZON_PLUGIN_URL, amazon_pext)
-    amazon_ext_dir = os.path.join(GAMER_PLAYNITE, "Extensions", "AmazonLibrary_Builtin")
-    os.makedirs(amazon_ext_dir, exist_ok=True)
-    with zipfile.ZipFile(amazon_pext, "r") as z:
-        z.extractall(amazon_ext_dir)
 
     # ===========================================================
     # [3/17] Install Steam (Per-User Template)
