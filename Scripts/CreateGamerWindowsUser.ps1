@@ -43,6 +43,22 @@ try {
     Write-Output "Default profile staged."
 
     # ------------------------------------------------------------------
+    # 1b. Patch the INSERTUSERNAMEHERE placeholder in every config file
+    #     that was just copied into Default. Windows will copy these to
+    #     the new user's profile on first login, so they need the real
+    #     username baked in before that happens.
+    # ------------------------------------------------------------------
+    Write-Output "Patching username placeholder in Default profile configs..."
+    Get-ChildItem -Path "$DefaultProfile\Playnite" -Recurse `
+        -Include "*.json","*.xml","*.cfg","*.ini" -ErrorAction SilentlyContinue |
+    ForEach-Object {
+        $raw = [System.IO.File]::ReadAllText($_.FullName)
+        if ($raw.Contains("INSERTUSERNAMEHERE")) {
+            [System.IO.File]::WriteAllText($_.FullName, $raw.Replace("INSERTUSERNAMEHERE", $UserName))
+        }
+    }
+
+    # ------------------------------------------------------------------
     # 2. Create the Windows account
     #    No pre-staging. Windows copies Default -> C:\Users\<UserName> on
     #    first login and creates a fresh NTUSER.DAT — no GP conflicts.

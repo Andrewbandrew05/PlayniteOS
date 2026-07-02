@@ -71,7 +71,7 @@
   "DownloadMetadataOnImport": true,
   "ShowIconsOnList": true,
   "ShowGroupCount": true,
-  "StartInFullscreen": false,
+  "StartInFullscreen": true,
   "DatabasePath": "{PlayniteDir}\\library",
   "FilterSettings": {
     "UseAndFilteringStyle": false,
@@ -505,7 +505,7 @@
   "IncludeCommandsInDefaultSearch": true,
   "AutoBackupEnabled": true,
   "AutoBackupFrequency": 1,
-  "AutoBackupDir": "C:\\Users\\WORKPLZ\\AppData\\Local\\Playnite\\Backup",
+  "AutoBackupDir": "C:\\Users\\INSERTUSERNAMEHERE\\AppData\\Local\\Playnite\\Backup",
   "RotatingBackups": 3,
   "AutoBackupIncludeLibFiles": false,
   "AutoBackupIncludeExtensionsData": false,
