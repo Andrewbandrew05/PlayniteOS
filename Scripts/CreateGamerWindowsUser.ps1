@@ -11,22 +11,23 @@ $DefaultHive    = "$DefaultProfile\NTUSER.DAT"
 try {
     Write-Output "--- Creating PlayniteOS Gamer User: $UserName ---"
 
+    # Pre-cleanup in case of previous failure
+    & reg unload HKU\DefaultTemp 2>$null
+    [gc]::Collect()
+    [gc]::WaitForPendingFinalizers()
+
     if (!(Test-Path $GamerTemplate)) {
         throw "GamerUser template not found at '$GamerTemplate'."
     }
 
-    # ------------------------------------------------------------------
     # 1. Overlay GamerUser files into Default
-    # ------------------------------------------------------------------
     Write-Output "Staging GamerUser content into Default profile..."
-    & robocopy $GamerTemplate $DefaultProfile /E /COPY:DAT /XJ `
+    & robocopy $GamerTemplate $DefaultProfile /E /COPY:DAT /XJ /R:5 /W:1 `
         /XF NTUSER.DAT "NTUSER.DAT.LOG1" "NTUSER.DAT.LOG2" NTUSER.MAN ntuser.ini `
              usrclass.dat "usrclass.dat.LOG1" "usrclass.dat.LOG2" `
         /NFL /NDL /NJH /NJS | Out-Null
 
-    # ------------------------------------------------------------------
-    # 2. "Delete" Desktop Apps and Start Menu Items from the Template
-    # ------------------------------------------------------------------
+    # 2. Clear Desktop and Start Menu
     Write-Output "Clearing Desktop and Start Menu shortcuts..."
     $PathsToClear = @(
         "$DefaultProfile\Desktop",
@@ -38,86 +39,63 @@ try {
         }
     }
 
-    # ------------------------------------------------------------------
-    # 3. Modify the Default Registry Hive (The "Phantom Explorer" Lockdown)
-    # ------------------------------------------------------------------
+    # 3. Modify the Default Registry Hive (Using native REG.EXE for maximum reliability)
     Write-Output "Applying Registry restrictions to Default Hive..."
-    
-    # Load the Default NTUSER.DAT into a temporary mount point
     & reg load HKU\DefaultTemp "$DefaultHive" | Out-Null
 
     try {
-        $RegPaths = @(
-            "HKU\DefaultTemp\Control Panel\Colors",
-            "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System",
-            "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer",
-            "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
-            "HKU\DefaultTemp\Keyboard Layout"
-        )
-        foreach ($p in $RegPaths) { if (!(Test-Path $p)) { New-Item $p -Force | Out-Null } }
+        # A. Force Background to Plain Black
+        & reg add "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v "Wallpaper" /t REG_SZ /d "" /f | Out-Null
+        & reg add "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v "WallpaperStyle" /t REG_SZ /d "0" /f | Out-Null
+        & reg add "HKU\DefaultTemp\Control Panel\Colors" /v "Background" /t REG_SZ /d "0 0 0" /f | Out-Null
 
-        # A. Force Background to Plain Black (Requires Policy to survive first login)
-        $PolSystem = "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\System"
-        New-ItemProperty -Path $PolSystem -Name "Wallpaper" -Value "" -PropertyType String -Force | Out-Null
-        New-ItemProperty -Path $PolSystem -Name "WallpaperStyle" -Value "0" -PropertyType String -Force | Out-Null
-        New-ItemProperty -Path "HKU\DefaultTemp\Control Panel\Colors" -Name "Background" -Value "0 0 0" -PropertyType String -Force | Out-Null
+        # B. Hide all Desktop Icons
+        & reg add "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideIcons" /t REG_DWORD /d 1 /f | Out-Null
 
-        # B. Hide all Desktop Icons (CRITICAL: Must be DWord)
-        New-ItemProperty -Path "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideIcons" -Value 1 -PropertyType DWord -Force | Out-Null
-
-        # C. Disable Taskbar and Start Menu Features (CRITICAL: Must be DWord)
+        # C. Disable Taskbar and Start Menu Features
         $PolExplorer = "HKU\DefaultTemp\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
-        New-ItemProperty -Path $PolExplorer -Name "NoSetTaskbar" -Value 1 -PropertyType DWord -Force | Out-Null
-        New-ItemProperty -Path $PolExplorer -Name "NoTrayItemsDisplay" -Value 1 -PropertyType DWord -Force | Out-Null
-        New-ItemProperty -Path $PolExplorer -Name "NoStartMenuMorePrograms" -Value 1 -PropertyType DWord -Force | Out-Null
-        New-ItemProperty -Path $PolExplorer -Name "NoTaskGrouping" -Value 1 -PropertyType DWord -Force | Out-Null
+        & reg add "$PolExplorer" /v "NoSetTaskbar" /t REG_DWORD /d 1 /f | Out-Null
+        & reg add "$PolExplorer" /v "NoTrayItemsDisplay" /t REG_DWORD /d 1 /f | Out-Null
+        & reg add "$PolExplorer" /v "NoStartMenuMorePrograms" /t REG_DWORD /d 1 /f | Out-Null
+        & reg add "$PolExplorer" /v "NoTaskGrouping" /t REG_DWORD /d 1 /f | Out-Null
 
-        # D. Disable the Windows Keys (Left and Right)
-        # Prevents the Start Menu from opening if a controller guide button or Win key is pressed.
-        $ScancodeMap = [byte[]](0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x03,0x00,0x00,0x00, 0x00,0x00,0x5B,0xE0, 0x00,0x00,0x5C,0xE0, 0x00,0x00,0x00,0x00)
-        New-ItemProperty -Path "HKU\DefaultTemp\Keyboard Layout" -Name "Scancode Map" -Value $ScancodeMap -PropertyType Binary -Force | Out-Null
+        # D. Disable the Windows Keys (Binary Scancode Map)
+        # 00000000 00000000 03000000 00005BE0 00005CE0 00000000
+        & reg add "HKU\DefaultTemp\Keyboard Layout" /v "Scancode Map" /t REG_BINARY /d 00000000000000000300000000005BE000005CE000000000 /f | Out-Null
 
-        # NOTE: We intentionally leave the "Shell" alone so explorer.exe runs.
-        # This allows Epic Games, EA App, and Xbox to initialize their COM objects and System Trays.
+        Write-Output "Registry restrictions applied."
     }
     finally {
-        # CRITICAL: Always unload the hive or the user creation will fail
         [gc]::Collect()
         [gc]::WaitForPendingFinalizers()
         & reg unload HKU\DefaultTemp | Out-Null
     }
 
-    # ------------------------------------------------------------------
     # 4. Patch placeholders
-    # ------------------------------------------------------------------
     Write-Output "Patching username placeholders..."
     Get-ChildItem -Path "$DefaultProfile\Playnite" -Recurse -Include "*.json","*.xml","*.cfg","*.ini" -ErrorAction SilentlyContinue | ForEach-Object {
-        $raw = [System.IO.File]::ReadAllText($_.FullName)
-        if ($raw.Contains("INSERTUSERNAMEHERE")) {
-            [System.IO.File]::WriteAllText($_.FullName, $raw.Replace("INSERTUSERNAMEHERE", $UserName))
-        }
+        try {
+            $raw = [System.IO.File]::ReadAllText($_.FullName)
+            if ($raw.Contains("INSERTUSERNAMEHERE")) {
+                [System.IO.File]::WriteAllText($_.FullName, $raw.Replace("INSERTUSERNAMEHERE", $UserName))
+            }
+        } catch { }
     }
 
-    # ------------------------------------------------------------------
     # 5. Create the Windows account
-    # ------------------------------------------------------------------
     Write-Output "Creating Windows account..."
     $SecurePassword = ConvertTo-SecureString $Password -AsPlainText -Force
-    New-LocalUser -Name $UserName -Password $SecurePassword -Description "PlayniteOS Gamer" -ErrorAction Stop
-    Add-LocalGroupMember -Group "Users" -Member $UserName
+    New-LocalUser -Name $UserName -Password $SecurePassword -Description "PlayniteOS Gamer" -ErrorAction Stop | Out-Null
+    Add-LocalGroupMember -Group "Users" -Member $UserName | Out-Null
 
-    # ------------------------------------------------------------------
-    # 6. Make user visible
-    # ------------------------------------------------------------------
-    $UserListPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList"
-    if (!(Test-Path $UserListPath)) { New-Item -Path $UserListPath -Force | Out-Null }
-    New-ItemProperty -Path $UserListPath -Name $UserName -Value 1 -PropertyType DWord -Force | Out-Null
+    # 6. Make user visible on login screen
+    $UserListPath = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList"
+    & reg add "$UserListPath" /v "$UserName" /t REG_DWORD /d 1 /f | Out-Null
 
-    Write-Output "--- SUCCESS: $UserName created with restricted UI ---"
+    Write-Output "--- SUCCESS: $UserName created ---"
 }
 catch {
     Write-Output "ERROR: $_"
-    # Emergency unload if script crashed while hive was mounted
     & reg unload HKU\DefaultTemp 2>$null
     exit 1
 }
