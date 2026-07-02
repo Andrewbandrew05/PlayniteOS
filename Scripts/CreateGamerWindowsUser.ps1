@@ -46,7 +46,7 @@ function Remove-Tree {
         }
     }
     & cmd /c rmdir "$Path" 2>$null
-    Remove-Item $Path -Force -ErrorAction SilentlyContinue
+    Remove-Item $Path -Force -Recurse -ErrorAction SilentlyContinue
 }
 
 # Clears the children of a directory (leaving the directory itself) the same way.
