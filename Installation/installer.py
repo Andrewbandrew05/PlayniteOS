@@ -91,12 +91,14 @@ def main():
     )
 
     # Kick off Battle.net immediately so it installs in the background.
-    # Pass --override with the install path so it doesn't prompt for a location
-    # on a fresh system.
+    # --override replaces winget's own silent args entirely, so include
+    # everything needed:  --lang skips the language dialog, --installpath
+    # pre-fills the location prompt (no spaces to avoid cmd quoting issues),
+    # --no-launch-when-done prevents Battle.net opening after install.
     print("Launching Battle.net installer in background...")
     subprocess.Popen(
-        'winget install -e --id Blizzard.BattleNet --silent '
-        '--override "--lang=enUS --installpath=C:\\\\Program Files (x86)\\\\Battle.net" '
+        'winget install -e --id Blizzard.BattleNet '
+        '--override "--lang=enUS --installpath=C:\\BattleNet --no-launch-when-done" '
         '--accept-source-agreements --accept-package-agreements',
         shell=True
     )
