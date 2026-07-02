@@ -166,10 +166,6 @@ def main():
     for folder in ["Scripts", "Core", "Configs"]:
         shutil.copytree(os.path.join(repo_root, folder), fr"C:\PlayniteOS\{folder}", dirs_exist_ok=True)
 
-    playnite_configs_src = r"C:\PlayniteOS\Configs\Playnite"
-    if os.path.isdir(playnite_configs_src):
-        shutil.copytree(playnite_configs_src, GAMER_PLAYNITE, dirs_exist_ok=True)
-
     # ===========================================================
     # [13/17] Configure Shared Game Library Paths
     # ===========================================================
