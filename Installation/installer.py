@@ -38,6 +38,27 @@ def main():
     print("  PlayniteOS Mark 2.0: True Console Mode  ")
     print("==========================================")
 
+    # ===========================================================
+    # [0/17] Cleanup Previous Updater Assets
+    # ===========================================================
+    print("\n[0/17] Checking for and removing old updater assets...")
+    old_update_script = r"C:\Users\Public\PlayniteOS-Update.ps1"
+    old_shortcut = os.path.join(os.path.join(os.environ['USERPROFILE'], 'Desktop'), "Update PlayniteOS.lnk")
+    
+    if os.path.exists(old_update_script):
+        try:
+            os.remove(old_update_script)
+            print(f"  Removed old updater script: {old_update_script}")
+        except Exception as e:
+            print(f"  Warning: Could not remove old updater script: {e}")
+
+    if os.path.exists(old_shortcut):
+        try:
+            os.remove(old_shortcut)
+            print(f"  Removed old desktop shortcut: {old_shortcut}")
+        except Exception as e:
+            print(f"  Warning: Could not remove old shortcut: {e}")
+
     DEFAULT_ROOT     = r"C:\Users\Default"
     DEFAULT_PLAYNITE = r"C:\Users\Default\Playnite"
     TEMP_DIR         = r"C:\PlayniteOS\tmp"
@@ -172,7 +193,6 @@ def main():
     run_cmd('reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideIcons" /t REG_DWORD /d 1 /f')
     run_cmd('reg add "HKU\DefaultTemplate\Keyboard Layout" /v "Scancode Map" /t REG_BINARY /d 00000000000000000300000000005BE000005CE000000000 /f')
     
-    # THE SHELL REPLACEMENT
     shell_cmd = r'wscript.exe //B "%USERPROFILE%\Playnite\BootOS.vbs"'
     run_cmd(f'reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_SZ /d "{shell_cmd}" /f')
     run_cmd('reg unload HKU\DefaultTemplate')
@@ -182,18 +202,13 @@ def main():
     # ===========================================================
     print("\n[16/17] Creating BootOS Shell Scripts...")
     
-    # BootOS.cmd - The logic controller
-    # FIXED: Added a loop to keep the shell process alive during setup mode
     boot_cmd_content = r"""@echo off
 set "PLAYNITE_DIR=%USERPROFILE%\Playnite"
 set "CONFIG_FILE=%PLAYNITE_DIR%\config.json"
 
-:: 1. Patch placeholders
 powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%USERPROFILE%\Playnite' -Recurse -Include *.json,*.xml,*.cfg,*.ini -ErrorAction SilentlyContinue | ForEach-Object { $content = [System.IO.File]::ReadAllText($_.FullName); if ($content.Contains('INSERTUSERNAMEHERE')) { [System.IO.File]::WriteAllText($_.FullName, $content.Replace('INSERTUSERNAMEHERE', '%USERNAME%')) } }"
 
-:: 2. Check for config.json
 if not exist "%CONFIG_FILE%" (
-    :: SETUP MODE: Launch Explorer and WAIT so the session doesn't end
     start explorer.exe
     echo PlayniteOS is in Setup Mode. Do not close this window.
     :setup_loop
@@ -202,7 +217,6 @@ if not exist "%CONFIG_FILE%" (
     exit /b
 )
 
-:: GAMER MODE: Explorer never starts.
 reg add "HKCU\Software\Valve\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\Playnite\Launchers\Steam" /f >nul
 reg add "HKCU\Software\Valve\Steam" /v "SteamExe"  /t REG_SZ /d "%USERPROFILE%\Playnite\Launchers\Steam\steam.exe" /f >nul
 reg add "HKCU\Software\Ubisoft\Launcher" /v "InstallDir" /t REG_SZ /d "C:\Games\Ubisoft\" /f >nul
@@ -215,7 +229,6 @@ reg add "HKCU\Software\Microsoft\GamingApp" /v "GameContentPath" /t REG_SZ /d "C
     vbs_content = 'Set WshShell = CreateObject("WScript.Shell")\r\nWshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\\Playnite\\BootOS.cmd""", 0, True\r\n'
     with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.vbs"), "w") as f: f.write(vbs_content)
     
-    # Setup.cmd - Placed in Startup folder
     setup_cmd_content = r"""@echo off
 if exist "%USERPROFILE%\Playnite\config.json" exit /b
 powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Welcome to PlayniteOS Setup!`n`nPlease sign into your launchers and configure Playnite.`n`nWhen finished, REBOOT to enter Console Mode.', 'PlayniteOS')"
