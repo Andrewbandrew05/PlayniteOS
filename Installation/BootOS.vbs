@@ -8,15 +8,8 @@ if not exist "%CONFIG_FILE%" (
     :: SETUP MODE: Launch Explorer and WAIT so the session doesn't end (Prevents Grey Screen)
     echo PlayniteOS is in Setup Mode. Initializing Desktop...
     
-    :: Visual indicator for Setup Mode
-    powershell -ExecutionPolicy Bypass -Command "$w = New-Object -ComObject WScript.Shell; $w.Popup('First Boot Detected: Entering Setup Mode (Explorer)...', 5, 'PlayniteOS Setup', 48)"
-    
     start explorer.exe
     
-    :setup_loop
-    timeout /t 10 /nobreak >nul
-    if not exist "%CONFIG_FILE%" goto setup_loop
-    exit /b
 ) else {
     ' --- RUN MAIN LOGIC ---
     ' Runs the BootOS.cmd script. 
