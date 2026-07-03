@@ -171,6 +171,8 @@ def main():
     run_cmd('reg add "HKU\DefaultTemplate\Control Panel\Colors" /v "Background" /t REG_SZ /d "0 0 0" /f')
     run_cmd('reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideIcons" /t REG_DWORD /d 1 /f')
     run_cmd('reg add "HKU\DefaultTemplate\Keyboard Layout" /v "Scancode Map" /t REG_BINARY /d 00000000000000000300000000005BE000005CE000000000 /f')
+    
+    # THE SHELL REPLACEMENT
     shell_cmd = r'wscript.exe //B "%USERPROFILE%\Playnite\BootOS.vbs"'
     run_cmd(f'reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_SZ /d "{shell_cmd}" /f')
     run_cmd('reg unload HKU\DefaultTemplate')
@@ -179,24 +181,41 @@ def main():
     # [16/17] Create BootOS Shell Scripts
     # ===========================================================
     print("\n[16/17] Creating BootOS Shell Scripts...")
+    
+    # BootOS.cmd - The logic controller
+    # FIXED: Added a loop to keep the shell process alive during setup mode
     boot_cmd_content = r"""@echo off
 set "PLAYNITE_DIR=%USERPROFILE%\Playnite"
 set "CONFIG_FILE=%PLAYNITE_DIR%\config.json"
+
+:: 1. Patch placeholders
 powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%USERPROFILE%\Playnite' -Recurse -Include *.json,*.xml,*.cfg,*.ini -ErrorAction SilentlyContinue | ForEach-Object { $content = [System.IO.File]::ReadAllText($_.FullName); if ($content.Contains('INSERTUSERNAMEHERE')) { [System.IO.File]::WriteAllText($_.FullName, $content.Replace('INSERTUSERNAMEHERE', '%USERNAME%')) } }"
+
+:: 2. Check for config.json
 if not exist "%CONFIG_FILE%" (
+    :: SETUP MODE: Launch Explorer and WAIT so the session doesn't end
     start explorer.exe
+    echo PlayniteOS is in Setup Mode. Do not close this window.
+    :setup_loop
+    timeout /t 60 /nobreak >nul
+    if not exist "%CONFIG_FILE%" goto setup_loop
     exit /b
 )
+
+:: GAMER MODE: Explorer never starts.
 reg add "HKCU\Software\Valve\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\Playnite\Launchers\Steam" /f >nul
 reg add "HKCU\Software\Valve\Steam" /v "SteamExe"  /t REG_SZ /d "%USERPROFILE%\Playnite\Launchers\Steam\steam.exe" /f >nul
 reg add "HKCU\Software\Ubisoft\Launcher" /v "InstallDir" /t REG_SZ /d "C:\Games\Ubisoft\" /f >nul
 reg add "HKCU\Software\Amazon\Amazon Games App" /v "GameInstallLocation" /t REG_SZ /d "C:\Games\Amazon" /f >nul
 reg add "HKCU\Software\Microsoft\GamingApp" /v "GameContentPath" /t REG_SZ /d "C:\Games\Xbox" /f >nul
+
 "%PLAYNITE_DIR%\Playnite.FullscreenApp.exe"
 """
     with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.cmd"), "w") as f: f.write(boot_cmd_content)
     vbs_content = 'Set WshShell = CreateObject("WScript.Shell")\r\nWshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\\Playnite\\BootOS.cmd""", 0, True\r\n'
     with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.vbs"), "w") as f: f.write(vbs_content)
+    
+    # Setup.cmd - Placed in Startup folder
     setup_cmd_content = r"""@echo off
 if exist "%USERPROFILE%\Playnite\config.json" exit /b
 powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Welcome to PlayniteOS Setup!`n`nPlease sign into your launchers and configure Playnite.`n`nWhen finished, REBOOT to enter Console Mode.', 'PlayniteOS')"
@@ -211,25 +230,19 @@ start "" "%USERPROFILE%\Playnite\Playnite.DesktopApp.exe"
     # [17/17] Create Desktop Updater (Shortcut)
     # ===========================================================
     print("\n[17/17] Creating Desktop Updater...")
-    
     update_ps1_content = r"""# PlayniteOS Universal Updater
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
-Write-Host "Stopping services and cleaning system..." -ForegroundColor Cyan
 sc.exe stop "PlayniteOS-Core" > $null 2>&1
 taskkill /F /IM "Playnite*" /T > $null 2>&1
 taskkill /F /IM "python.exe" /T > $null 2>&1
-
 & reg load HKU\DefaultTemplate "C:\Users\Default\NTUSER.DAT" > $null 2>&1
 & reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_SZ /d "explorer.exe" /f > $null 2>&1
 & reg unload HKU\DefaultTemplate > $null 2>&1
-
 Remove-Item -Recurse -Force "C:\PlayniteOS" -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force "C:\Users\Default\Playnite" -ErrorAction SilentlyContinue
-
-Write-Host "Downloading fresh installer..." -ForegroundColor Green
 $Url = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main/installer.py"
 $Dest = "$env:TEMP\installer.py"
 Invoke-WebRequest -Uri $Url -OutFile $Dest
@@ -237,23 +250,10 @@ python $Dest
 """
     update_script_path = r"C:\Users\Public\PlayniteOS-Update.ps1"
     with open(update_script_path, "w") as f: f.write(update_ps1_content)
-
     desktop = os.path.join(os.environ['USERPROFILE'], 'Desktop')
     shortcut_path = os.path.join(desktop, "Update PlayniteOS.lnk")
     icon_path = r"C:\Windows\System32\shell32.dll,238"
-    
-    # Fixed VBScript generation using Chr(34) to avoid triple-quote termination errors
-    vbs_script = f"""
-Set WshShell = WScript.CreateObject("WScript.Shell")
-Set oShellLink = WshShell.CreateShortcut("{shortcut_path}")
-oShellLink.TargetPath = "powershell.exe"
-oShellLink.Arguments = "-NoProfile -ExecutionPolicy Bypass -File " & Chr(34) & "{update_script_path}" & Chr(34)
-oShellLink.WindowStyle = 1
-oShellLink.IconLocation = "{icon_path}"
-oShellLink.Description = "Update PlayniteOS to the latest version"
-oShellLink.WorkingDirectory = "C:\\"
-oShellLink.Save
-"""
+    vbs_script = f'Set WshShell = WScript.CreateObject("WScript.Shell")\nSet oShellLink = WshShell.CreateShortcut("{shortcut_path}")\noShellLink.TargetPath = "powershell.exe"\noShellLink.Arguments = "-NoProfile -ExecutionPolicy Bypass -File " & Chr(34) & "{update_script_path}" & Chr(34)\noShellLink.WindowStyle = 1\noShellLink.IconLocation = "{icon_path}"\noShellLink.Save'
     vbs_temp = os.path.join(TEMP_DIR, "create_shortcut.vbs")
     with open(vbs_temp, "w") as f: f.write(vbs_script)
     run_cmd(f"wscript.exe {vbs_temp}")
