@@ -62,4 +62,4 @@ def send_action(action_name, params):
         print(f"Error: {e}")
 
 # --- TEST ---
-send_action("create_user", {"UserName": "SkibbidGamur", "Password": "urmom"})
+send_action("create_user", {"UserName": "ILoveUpdaters", "Password": "urmom"})
