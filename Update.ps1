@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PlayniteOS Universal Updater & Reset Script
+# PlayniteOS Universal Updater & Reset Script (Bootstrap Edition)
 # ---------------------------------------------------------------------------
 
 # 1. Self-Elevate to Administrator
@@ -9,7 +9,13 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 }
 
 $InstallerUrl = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main/Installation/installer.py"
+$PythonUrl = "https://www.python.org/ftp/python/3.11.5/python-3.11.5-embed-amd64.zip"
 $DefaultHive = "C:\Users\Default\NTUSER.DAT"
+
+$TempDir = "$env:TEMP\PlayniteOS_Update"
+$PyZip = "$TempDir\py_bootstrap.zip"
+$PyExeDir = "$TempDir\Python"
+$TempInstaller = "$TempDir\installer.py"
 
 Write-Host "!!! STARTING PLAYNITEOS RESET & UPDATE !!!" -ForegroundColor Cyan
 
@@ -28,25 +34,22 @@ Write-Host "Reverting Registry Lockdown..."
 & reg load HKU\DefaultTemplate "$DefaultHive" > $null 2>&1
 
 if ($LASTEXITCODE -eq 0) {
-    # Remove Policies
     & reg delete "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v "Wallpaper" /f > $null 2>&1
     & reg delete "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoSetTaskbar" /f > $null 2>&1
     & reg delete "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoTrayItemsDisplay" /f > $null 2>&1
-    
-    # Restore UI Defaults
     & reg add "HKU\DefaultTemplate\Control Panel\Colors" /v "Background" /t REG_SZ /d "0 120 215" /f > $null 2>&1
     & reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideIcons" /t REG_DWORD /d 0 /f > $null 2>&1
     & reg delete "HKU\DefaultTemplate\Keyboard Layout" /v "Scancode Map" /f > $null 2>&1
-    
     & reg unload HKU\DefaultTemplate > $null 2>&1
 }
 
-# 4. Wipe PlayniteOS Files (Except Games)
+# 4. Wipe PlayniteOS Files
 Write-Host "Wiping old files..."
 $PathsToDelete = @(
     "C:\PlayniteOS",
     "C:\Users\Default\Playnite",
-    "C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\BootOS.vbs"
+    "C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\BootOS.vbs",
+    "C:\Users\Default\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\Setup.cmd"
 )
 
 foreach ($Path in $PathsToDelete) {
@@ -56,15 +59,35 @@ foreach ($Path in $PathsToDelete) {
     }
 }
 
-# 5. Re-enable Nahimic (Installer will disable it again if needed)
-& sc.exe config "NahimicService" start= auto > $null 2>&1
+# 5. Setup Temporary Python Runtime
+Write-Host "Setting up temporary Python runtime..." -ForegroundColor Yellow
+if (Test-Path $TempDir) { Remove-Item -Recurse -Force $TempDir }
+New-Item -ItemType Directory -Path $PyExeDir -Force | Out-Null
+
+Write-Host "  Downloading Python..."
+Invoke-WebRequest -Uri $PythonUrl -OutFile $PyZip
+Write-Host "  Extracting Python..."
+Expand-Archive -Path $PyZip -DestinationPath $PyExeDir -Force
+
+# Enable site-packages for the embedded runtime
+$PthFile = Get-ChildItem -Path $PyExeDir -Filter "*._pth" | Select-Object -First 1
+if ($PthFile) {
+    $Content = Get-Content $PthFile.FullName
+    $Content = $Content -replace "#import site", "import site"
+    Set-Content -Path $PthFile.FullName -Value $Content
+}
 
 # 6. Download and Run the New Installer
-Write-Host "Downloading fresh installer from GitHub..." -ForegroundColor Green
-$TempInstaller = "$env:TEMP\installer.py"
+Write-Host "Downloading fresh installer..." -ForegroundColor Green
 Invoke-WebRequest -Uri $InstallerUrl -OutFile $TempInstaller
 
 Write-Host "Launching Installer..." -ForegroundColor Green
-# This assumes 'python' is in your system PATH. 
-# If not, the installer will handle its own environment once it starts.
-python $TempInstaller
+# Run the installer and wait for it to finish
+Start-Process -FilePath "$PyExeDir\python.exe" -ArgumentList "`"$TempInstaller`"" -Wait
+
+# 7. Cleanup
+Write-Host "Cleaning up temporary runtime..." -ForegroundColor Cyan
+Set-Location $env:USERPROFILE
+Remove-Item -Recurse -Force $TempDir -ErrorAction SilentlyContinue
+
+Write-Host "Update process complete." -ForegroundColor Green
