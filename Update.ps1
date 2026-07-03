@@ -8,7 +8,7 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     exit
 }
 
-$InstallerUrl = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main/installer.py"
+$InstallerUrl = "https://raw.githubusercontent.com/Andrewbandrew05/PlayniteOS/main/Installation/installer.py"
 $DefaultHive = "C:\Users\Default\NTUSER.DAT"
 
 Write-Host "!!! STARTING PLAYNITEOS RESET & UPDATE !!!" -ForegroundColor Cyan
