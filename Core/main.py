@@ -53,7 +53,7 @@ async def run_action(
 
     # 3. Execution: Map script_name to actual .ps1 files (Whitelist only!)
     script_map = {
-        "create_user": "C:\\PlayniteOS\\Scripts\\CreateUser.ps1",
+        "create_user":          "C:\\PlayniteOS\\Scripts\\CreateUser.ps1",
         "kick_user":            "C:\\PlayniteOS\\Scripts\\KickUser.ps1",
         "unlock_admin":         "C:\\PlayniteOS\\Scripts\\UnlockAdmin.ps1",
         "switch_user":          "C:\\PlayniteOS\\Scripts\\SwitchUser.ps1",

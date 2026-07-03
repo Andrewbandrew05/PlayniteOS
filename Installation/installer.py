@@ -35,10 +35,9 @@ def download(url, dest):
 
 def main():
     print("==========================================")
-    print("  PlayniteOS Mark 2.0: Gamer-Only Mode    ")
+    print("  PlayniteOS Mark 2.0: True Console Mode  ")
     print("==========================================")
 
-    # We now use the actual Windows Default profile as our only template
     DEFAULT_ROOT     = r"C:\Users\Default"
     DEFAULT_PLAYNITE = r"C:\Users\Default\Playnite"
     TEMP_DIR         = r"C:\PlayniteOS\tmp"
@@ -47,25 +46,19 @@ def main():
     # [1/16] Create Global Game Silos
     # ===========================================================
     print("\n[1/16] Creating Global Game Silos...")
-    for silo in [
-        r"Steam\steamapps", "Epic", "GOG", "Xbox",
-        "Ubisoft", "EA", "BattleNet", "Amazon", "itchio"
-    ]:
+    for silo in [r"Steam\steamapps", "Epic", "GOG", "Xbox", "Ubisoft", "EA", "BattleNet", "Amazon", "itchio"]:
         os.makedirs(fr"C:\Games\{silo}", exist_ok=True)
     
     os.makedirs(r"C:\PlayniteOS\Core\Python", exist_ok=True)
     os.makedirs(r"C:\PlayniteOS\Scripts", exist_ok=True)
     os.makedirs(TEMP_DIR, exist_ok=True)
 
-    print("Updating winget sources...")
     run_cmd("winget source update --disable-interactivity --accept-source-agreements")
-
-    print("Installing shared prerequisites (WebView2, VC++ Redist)...")
     run_cmd("winget install --id Microsoft.EdgeWebView2Runtime --silent --accept-source-agreements --accept-package-agreements")
     run_cmd("winget install --id Microsoft.VCRedist.2015+.x64 --silent --accept-source-agreements --accept-package-agreements")
 
     # ===========================================================
-    # [2/16] Build Playnite Master Seed in Default Profile
+    # [2/16] Build Playnite Master Seed
     # ===========================================================
     print("\n[2/16] Building Playnite in Default Profile...")
     os.makedirs(DEFAULT_PLAYNITE, exist_ok=True)
@@ -92,17 +85,14 @@ def main():
     run_cmd("winget install -e --id EpicGames.EpicGamesLauncher --silent --accept-source-agreements --accept-package-agreements")
     run_cmd("winget install -e --id GOG.Galaxy --silent --accept-source-agreements --accept-package-agreements")
     
-    # Ubisoft Hash Fix
     ubi_setup = fr"{TEMP_DIR}\UbisoftConnectInstaller.exe"
     download("https://ubistatic3-a.akamaihd.net/orbit/launcher_installer/UbisoftConnectInstaller.exe", ubi_setup)
     run_cmd(fr'"{ubi_setup}" /S')
 
-    # EA App
     ea_setup = fr"{TEMP_DIR}\ea_setup.exe"
     download(EA_URL, ea_setup)
     run_cmd(fr'"{ea_setup}" /quiet /norestart')
 
-    # Battle.net Async
     bnet_setup = fr"{TEMP_DIR}\Battle.net-Setup.exe"
     download("https://www.battle.net/download/getInstallerForGame?os=win&gameProgram=BATTLENET_APP&version=Live", bnet_setup)
     subprocess.Popen(fr'"{bnet_setup}" --lang=enUS --installpath=C:\BattleNet')
@@ -136,7 +126,6 @@ def main():
     for proc in ["EpicGamesLauncher.exe", "GalaxyClient.exe", "UbisoftConnect.exe", "EADesktop.exe", "Battle.net.exe", "AmazonGamesUI.exe"]:
         run_cmd(fr'taskkill /F /IM "{proc}" /T >nul 2>&1')
 
-    # Seed Epic/Ubisoft configs into Default Profile
     epic_cfg = os.path.join(DEFAULT_ROOT, r"AppData\Local\EpicGamesLauncher\Saved\Config\Windows")
     os.makedirs(epic_cfg, exist_ok=True)
     with open(os.path.join(epic_cfg, "GameUserSettings.ini"), "w") as f:
@@ -147,7 +136,6 @@ def main():
     with open(os.path.join(ubi_cfg, "settings.yml"), "w") as f:
         f.write("instpath: C:\\Games\\Ubisoft\\\nminimize_to_systray: true\n")
 
-    # Global Registry Overrides
     run_cmd(r'reg add "HKLM\SOFTWARE\Amazon\Amazon Games App" /v "GameInstallLocation" /t REG_SZ /d "C:\Games\Amazon" /f')
     run_cmd(r'reg add "HKLM\SOFTWARE\Microsoft\GamingServices" /v "GamingRootPath" /t REG_SZ /d "C:\Games\Xbox" /f')
 
@@ -174,61 +162,76 @@ def main():
     run_cmd(r"C:\PlayniteOS\Core\PlayniteOS-Service.exe start")
 
     # ===========================================================
-    # [15/16] Lockdown the Windows Default Profile (Permanent)
+    # [15/16] Lockdown & Shell Replacement (The "True Console" Fix)
     # ===========================================================
-    print("\n[15/16] Locking down Windows Default Profile...")
+    print("\n[15/16] Replacing Windows Shell in Default Profile...")
     default_hive = os.path.join(DEFAULT_ROOT, "NTUSER.DAT")
-    
-    # Mount the Default Hive
     run_cmd(f'reg load HKU\DefaultTemplate "{default_hive}"')
     
-    # Apply Lockdown
+    # A. UI Lockdown
     run_cmd('reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Policies\System" /v "Wallpaper" /t REG_SZ /d "" /f')
     run_cmd('reg add "HKU\DefaultTemplate\Control Panel\Colors" /v "Background" /t REG_SZ /d "0 0 0" /f')
     run_cmd('reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideIcons" /t REG_DWORD /d 1 /f')
-    run_cmd('reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoSetTaskbar" /t REG_DWORD /d 1 /f')
-    run_cmd('reg add "HKU\DefaultTemplate\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoTrayItemsDisplay" /t REG_DWORD /d 1 /f')
     run_cmd('reg add "HKU\DefaultTemplate\Keyboard Layout" /v "Scancode Map" /t REG_BINARY /d 00000000000000000300000000005BE000005CE000000000 /f')
     
-    # Unload
+    # B. THE SHELL REPLACEMENT
+    # We point the shell to our VBS script. Windows will now boot directly into our logic.
+    shell_cmd = r'wscript.exe //B "%USERPROFILE%\Playnite\BootOS.vbs"'
+    run_cmd(f'reg add "HKU\DefaultTemplate\Software\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "Shell" /t REG_SZ /d "{shell_cmd}" /f')
+    
     run_cmd('reg unload HKU\DefaultTemplate')
 
     # ===========================================================
-    # [16/16] Create BootOS Shell Scripts in Default Profile
+    # [16/16] Create BootOS Shell Scripts
     # ===========================================================
-    print("\n[16/16] Creating BootOS Shell Scripts in Default Profile...")
+    print("\n[16/16] Creating BootOS Shell Scripts...")
     
-    # Note: We keep these flush-left (no indentation) to ensure Batch parses them correctly.
+    # BootOS.cmd - The logic controller
     boot_cmd_content = r"""@echo off
-:: 1. Patch placeholders (Fixes config paths on first login)
+set "PLAYNITE_DIR=%USERPROFILE%\Playnite"
+set "CONFIG_FILE=%PLAYNITE_DIR%\config.json"
+
+:: 1. Patch placeholders
 powershell -ExecutionPolicy Bypass -Command "Get-ChildItem -Path '%USERPROFILE%\Playnite' -Recurse -Include *.json,*.xml,*.cfg,*.ini -ErrorAction SilentlyContinue | ForEach-Object { $content = [System.IO.File]::ReadAllText($_.FullName); if ($content.Contains('INSERTUSERNAMEHERE')) { [System.IO.File]::WriteAllText($_.FullName, $content.Replace('INSERTUSERNAMEHERE', '%USERNAME%')) } }"
 
-:: 2. Prime Launcher Paths
+:: 2. Check for config.json
+if not exist "%CONFIG_FILE%" (
+    :: SETUP MODE: Launch Explorer so the user has a desktop
+    start explorer.exe
+    exit /b
+)
+
+:: GAMER MODE: Explorer never starts. Launch Playnite directly.
+:: Prime Launcher Paths
 reg add "HKCU\Software\Valve\Steam" /v "SteamPath" /t REG_SZ /d "%USERPROFILE%\Playnite\Launchers\Steam" /f >nul
 reg add "HKCU\Software\Valve\Steam" /v "SteamExe"  /t REG_SZ /d "%USERPROFILE%\Playnite\Launchers\Steam\steam.exe" /f >nul
 reg add "HKCU\Software\Ubisoft\Launcher" /v "InstallDir" /t REG_SZ /d "C:\Games\Ubisoft\" /f >nul
 reg add "HKCU\Software\Amazon\Amazon Games App" /v "GameInstallLocation" /t REG_SZ /d "C:\Games\Amazon" /f >nul
 reg add "HKCU\Software\Microsoft\GamingApp" /v "GameContentPath" /t REG_SZ /d "C:\Games\Xbox" /f >nul
 
-:: 3. SMART TASKBAR HIDE (Zero-Gap Fix)
-powershell -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -Command "$h=0; while($h -eq 0){ $h=[int](Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class TB { [DllImport(\"user32.dll\")] public static extern IntPtr FindWindow(string c, string w); }' -PassThru)::FindWindow(\"Shell_TrayWnd\",$null); Start-Sleep -m 50 }; Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class TB { [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); }'; [TB]::ShowWindow($h, 0)"
-
-:: 4. Launch Playnite Fullscreen
-"%USERPROFILE%\Playnite\Playnite.FullscreenApp.exe"
-
-:: 5. Restore Taskbar on exit (Fixed: Added ShowWindow definition)
-powershell -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -Command "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class TB { [DllImport(\"user32.dll\")] public static extern IntPtr FindWindow(string c, string w); [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int c); }'; [TB]::ShowWindow([TB]::FindWindow(\"Shell_TrayWnd\",$null), 5)"
+"%PLAYNITE_DIR%\Playnite.FullscreenApp.exe"
 """
     with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.cmd"), "w") as f: f.write(boot_cmd_content)
-    with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.cmd"), "w") as f: f.write(boot_cmd_content)
 
+    # BootOS.vbs - The invisible shell entry point
     vbs_content = 'Set WshShell = CreateObject("WScript.Shell")\r\nWshShell.Run """" & WshShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\\Playnite\\BootOS.cmd""", 0, True\r\n'
     with open(os.path.join(DEFAULT_PLAYNITE, "BootOS.vbs"), "w") as f: f.write(vbs_content)
 
-    # Place VBS in Default Startup folder
+    # Setup.cmd - Placed in Startup folder, only runs if Explorer is running
+    setup_cmd_content = r"""@echo off
+if exist "%USERPROFILE%\Playnite\config.json" exit /b
+
+:: Inform the user
+powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Welcome to PlayniteOS Setup!`n`nPlease sign into your launchers and configure Playnite.`n`nWhen finished, REBOOT to enter Console Mode.', 'PlayniteOS')"
+
+:: Launch everything
+start "" "%USERPROFILE%\Playnite\Launchers\Steam\steam.exe"
+start "" "%USERPROFILE%\Playnite\Playnite.DesktopApp.exe"
+:: (Add other launchers here if desired)
+"""
     startup_dir = os.path.join(DEFAULT_ROOT, r"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
     os.makedirs(startup_dir, exist_ok=True)
-    shutil.copy2(os.path.join(DEFAULT_PLAYNITE, "BootOS.vbs"), os.path.join(startup_dir, "BootOS.vbs"))
+    with open(os.path.join(startup_dir, "Setup.cmd"), "w") as f: f.write(setup_cmd_content)
 
     # Finalize Bloatware
     run_cmd('sc config "NahimicService" start= disabled >nul 2>&1')
